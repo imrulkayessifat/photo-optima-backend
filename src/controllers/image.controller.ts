@@ -32,11 +32,12 @@ export const storeImage = async (req: Request, res: Response): Promise<void> => 
     try {
         const productId = req.params.id;
         const imageData = req.body;
-        const { id, url } = imageData;
+        const { id, url,status } = imageData;
         const image = await db.image.create({
             data: {
                 id,
                 url,
+                status,
                 productId
             }
         })
