@@ -29,6 +29,6 @@ model Image {
   id        String  @id
   url       String
   productId String
-  status    Status?  @default(NOT_COMPRESSED)
+  status    Status? @default(NOT_COMPRESSED)
   product   Product @relation(fields: [productId], references: [id])
 }
