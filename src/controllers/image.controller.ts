@@ -28,11 +28,27 @@ export const getImageById = async (req: Request, res: Response): Promise<void> =
     }
 };
 
+export const getImageByProductId = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const productId = req.params.id;
+        console.log(productId)
+        const images = await db.image.findMany({
+            where: {
+                productId: productId,
+            },
+        });
+
+        res.status(200).json({ data: images });
+    } catch (e) {
+        console.log(e);
+    }
+};
+
 export const storeImage = async (req: Request, res: Response): Promise<void> => {
     try {
         const productId = req.params.id;
         const imageData = req.body;
-        const { id, url,status } = imageData;
+        const { id, url, status } = imageData;
         const image = await db.image.create({
             data: {
                 id,
