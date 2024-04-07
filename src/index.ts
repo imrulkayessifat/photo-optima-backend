@@ -1,9 +1,12 @@
 import express from 'express';
+const amqp = require('amqplib/callback_api');
+
 import { PrismaClient } from "@prisma/client";
-import { Request, Response } from "express";
+import cors from 'cors';
 
 import productRouter from './routes/product.router';
 import imageRouter from './routes/image.router';
+import compressRouter from './routes/compress.router';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -15,12 +18,17 @@ const getRawBody = require('raw-body')
 const crypto = require('crypto')
 const secretKey = 'a1652530377ea8a602862f39dd54b2bb745b62cdf32427bba12dc79e9116b625'
 
+app.use(cors());
+app.options('*', cors());
+
 app.use("/products", productRouter);
 app.use("/images", imageRouter);
+app.use('/compress-image', compressRouter);
 
 app.get("/", (req, res) => {
     res.json({ message: "demo response" }).status(200)
 })
+
 
 app.post("/webhooks/product/create", async (req, res) => {
     const hmac = req.get('X-Shopify-Hmac-Sha256')
@@ -113,8 +121,42 @@ app.post("/webhooks/product/update", async (req, res) => {
     }
 })
 
+amqp.connect('amqp://localhost', function(error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
+    if (error0) {
+        throw error0;
+    }
+    connection.createChannel(function(error1, channel) {
+        if (error1) {
+            throw error1;
+        }
 
+        const queue = 'image_queue';
+
+        channel.assertQueue(queue, {
+            durable: false
+        });
+
+        console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
+
+        channel.consume(queue, async function(msg: { content: { toString: () => any; }; }) {
+            console.log(" [x] Received %s", msg.content.toString());
+            const id = msg.content.toString();
+
+            // Update the status in the database
+            const updatedImage = await db.image.update({
+                where: { id: id },
+                data: { status: 'COMPRESSED' },
+            });
+
+            console.log(`Image ${id} status updated to COMPRESSED`);
+
+        }, {
+            noAck: true
+        });
+    });
+});
 
 app.listen(port, () => {
     console.log(`server up and running on port: ${port}`)
 })
+
