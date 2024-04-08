@@ -1,4 +1,7 @@
 import express from 'express';
+import sharp from "sharp";
+import axios from "axios";
+import fs from "fs";
 const amqp = require('amqplib/callback_api');
 
 import { PrismaClient } from "@prisma/client";
@@ -23,7 +26,7 @@ app.options('*', cors());
 
 app.use("/products", productRouter);
 app.use("/images", imageRouter);
-app.use('/compress-image', compressRouter);
+// app.use('/compress-image', compressRouter);
 
 app.get("/", (req, res) => {
     res.json({ message: "demo response" }).status(200)
@@ -121,26 +124,37 @@ app.post("/webhooks/product/update", async (req, res) => {
     }
 })
 
-amqp.connect('amqp://localhost', function(error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
+amqp.connect('amqp://localhost', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
     if (error0) {
         throw error0;
     }
-    connection.createChannel(function(error1, channel) {
+    connection.createChannel(function (error1, channel) {
         if (error1) {
             throw error1;
         }
 
-        const queue = 'image_queue';
+        const queue = 'shopify_to_compressor';
 
         channel.assertQueue(queue, {
             durable: false
         });
 
-        console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
 
-        channel.consume(queue, async function(msg: { content: { toString: () => any; }; }) {
-            console.log(" [x] Received %s", msg.content.toString());
-            const id = msg.content.toString();
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
+
+            const data = JSON.parse(msg.content.toString());
+
+            // Access id and url from the data
+            const { id, productid, url } = data;
+
+
+
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const buffer = Buffer.from(response.data, 'binary');
+
+            const compressedBuffer = await sharp(buffer).resize(300, 300).jpeg({ quality: 60 }).toBuffer();
+
+            fs.writeFileSync('hello.jpg', compressedBuffer);
 
             // Update the status in the database
             const updatedImage = await db.image.update({
@@ -148,12 +162,83 @@ amqp.connect('amqp://localhost', function(error0: any, connection: { createChann
                 data: { status: 'COMPRESSED' },
             });
 
-            console.log(`Image ${id} status updated to COMPRESSED`);
+            const uploadImage = await fetch('http://localhost:3001/upload-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id, productid, compressedBuffer })
+            })
+
 
         }, {
             noAck: true
         });
     });
+
+    connection.createChannel(function (error1, channel) {
+        if (error1) {
+            throw error1;
+        }
+
+        const queue = 'compressor_to_uploader';
+
+        channel.assertQueue(queue, {
+            durable: false
+        });
+
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
+
+            const content = JSON.parse(msg.content.toString());
+
+            // Access id and url from the data
+            const { id, productid, compressedBuffer } = content;
+
+
+            const base64Image = Buffer.from(compressedBuffer).toString('base64');
+
+            const image = {
+                product_id: productid,
+                attachment: base64Image,
+            };
+
+            const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
+                },
+                body: JSON.stringify({ image })
+            })
+
+
+            const data = await response.json();
+
+            console.log("Upload Image Data : ", data)
+
+            const product_id = data.image.product_id;
+            const src = data.image.src
+
+            const replace = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
+                },
+                body: JSON.stringify({
+                    image: {
+                        product_id: product_id,
+                        src: src
+                    }
+                })
+            })
+
+            const replacedata = await replace.json();
+            console.log("Replace Image Response : ", replacedata)
+        }, {
+            noAck: true
+        });
+    })
 });
 
 app.listen(port, () => {
