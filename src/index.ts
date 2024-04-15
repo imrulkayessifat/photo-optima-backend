@@ -124,6 +124,31 @@ app.post("/webhooks/product/update", async (req, res) => {
     }
 })
 
+app.post("/webhooks/product/delete", async (req, res) => {
+    const hmac = req.get('X-Shopify-Hmac-Sha256')
+
+    const body = await getRawBody(req)
+
+    const hash = crypto
+        .createHmac('sha256', secretKey)
+        .update(body, 'utf8', 'hex')
+        .digest('base64')
+
+
+    if (hmac === hash) {
+        try {
+            req.body = JSON.parse(body.toString());
+            const productData = req.body;
+            console.log("web hooks deletion : ", productData)
+        } catch (e) {
+            res.status(500).json({ error: 'An error occurred while storing product data.' });
+        }
+    } else {
+        res.status(403).json({ error: "you don't have access" })
+    }
+
+})
+
 amqp.connect('amqp://localhost', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
     if (error0) {
         throw error0;
@@ -170,7 +195,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 body: JSON.stringify({ id, productid, compressedBuffer })
             })
 
-
         }, {
             noAck: true
         });
@@ -214,27 +238,24 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             const data = await response.json();
 
-            console.log("Upload Image Data : ", data)
-
-            const product_id = data.image.product_id;
-            const src = data.image.src
-
-            const replace = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
-                method: 'PUT',
+            const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
+                method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
                 },
-                body: JSON.stringify({
-                    image: {
-                        product_id: product_id,
-                        src: src
-                    }
-                })
             })
 
-            const replacedata = await replace.json();
-            console.log("Replace Image Response : ", replacedata)
+            const deleteImageRes = await deleteImage.json();
+
+
+            const removeImageFromCustomDB = await db.image.delete({
+                where: {
+                    id
+                }
+            })
+
+
         }, {
             noAck: true
         });
