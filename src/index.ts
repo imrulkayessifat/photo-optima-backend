@@ -5,6 +5,7 @@ import fs from "fs";
 const amqp = require('amqplib/callback_api');
 
 import { PrismaClient } from "@prisma/client";
+import { Image } from '@prisma/client';
 import cors from 'cors';
 
 import productRouter from './routes/product.router';
@@ -83,35 +84,51 @@ app.post("/webhooks/product/update", async (req, res) => {
             req.body = JSON.parse(body.toString());
             const productData = req.body;
             const { id, title, images } = productData;
+            
             const productId = id.toString();
 
             let responses = [];
 
             for (const image of images) {
-                const { id: imageId, src: url } = image;
+                const { id: imageId, src: url, width, height } = image;
                 const imageIdStr = imageId.toString();
-
+            
                 const existingImage = await db.image.findUnique({
                     where: { id: imageIdStr },
                 });
-
+            
                 if (existingImage) {
+                    let data:Image = {
+                        id: imageIdStr,
+                        url,
+                        productId: existingImage.productId,
+                        status: existingImage.status
+                    };
+                    if (width === 300 && height === 300) {
+                        data.status = 'COMPRESSED';
+                    }
                     const response = await db.image.update({
                         where: { id: imageIdStr },
-                        data: { url },
+                        data,
                     });
                     responses.push(response);
                 } else {
+                    let data:Image = {
+                        id: imageIdStr,
+                        url,
+                        productId,
+                        status: 'NOT_COMPRESSED'
+                    };
+                    if (width === 300 && height === 300) {
+                        data.status = 'COMPRESSED';
+                    }
                     const response = await db.image.create({
-                        data: {
-                            id: imageIdStr,
-                            url,
-                            productId,
-                        },
+                        data,
                     });
                     responses.push(response);
                 }
-            }
+            }            
+            
 
             res.status(200).json({ data: responses });
 
