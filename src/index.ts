@@ -189,8 +189,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             // Access id and url from the data
             const { id, productid, url } = data;
 
-
-
             const response = await axios.get(url, { responseType: 'arraybuffer' });
             const buffer = Buffer.from(response.data, 'binary');
 
@@ -276,7 +274,48 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
         }, {
             noAck: true
         });
-    })
+    });
+
+    connection.createChannel(function (error1, channel) {
+        if (error1) {
+            throw error1;
+        }
+
+        const queue = 'periodic_update';
+
+        channel.assertQueue(queue, {
+            durable: false
+        });
+
+
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
+
+            const data = JSON.parse(msg.content.toString());
+            const { id, productid, url } = data;
+
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const buffer = Buffer.from(response.data, 'binary');
+
+            const compressedBuffer = await sharp(buffer).resize(300, 300).jpeg({ quality: 60 }).toBuffer();
+
+            // Update the status in the database
+            const updatedImage = await db.image.update({
+                where: { id: id },
+                data: { status: 'COMPRESSED' },
+            });
+
+            const uploadImage = await fetch('http://localhost:3001/upload-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id, productid, compressedBuffer })
+            })
+
+        }, {
+            noAck: true
+        });
+    });
 });
 
 app.listen(port, () => {
