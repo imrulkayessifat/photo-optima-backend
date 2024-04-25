@@ -3,6 +3,10 @@ import sharp from "sharp";
 import axios from "axios";
 import fs from "fs";
 const amqp = require('amqplib/callback_api');
+const nonce = require("nonce");
+const querystring = require("querystring");
+const cookie = require("cookie");
+const request = require("request-promise");
 
 import { PrismaClient } from "@prisma/client";
 import { Image } from '@prisma/client';
@@ -21,18 +25,89 @@ const db = new PrismaClient();
 const getRawBody = require('raw-body')
 const crypto = require('crypto')
 const secretKey = 'a1652530377ea8a602862f39dd54b2bb745b62cdf32427bba12dc79e9116b625'
+const apiKey = process.env.SHOPIFY_API_KEY;
+const apiSecret = process.env.SHOPIFY_API_SECRET;
+const scopes = "write_products";
+const forwardingAddress = "https://a935-182-163-119-50.ngrok-free.app";
 
 app.use(cors());
 app.options('*', cors());
 
 app.use("/products", productRouter);
 app.use("/images", imageRouter);
-// app.use('/compress-image', compressRouter);
 
-app.get("/", (req, res) => {
-    res.json({ message: "demo response" }).status(200)
+app.get("/shopify", (req, res) => {
+    const shopName = req.query.shop;
+    if (shopName) {
+
+        const shopState = nonce();
+
+        const redirectURL = forwardingAddress + "/shopify/callback";
+
+        // install url for app install
+        const installUrl =
+            "https://" +
+            shopName +
+            "/admin/oauth/authorize?client_id=" +
+            apiKey +
+            "&scope=" +
+            scopes +
+            "&state=" +
+            shopState +
+            "&redirect_uri=" +
+            redirectURL+
+            "&grant_options[]=per-user";
+        res.cookie("state", shopState);
+        // redirect the user to the installUrl
+        res.redirect(installUrl);
+    } else {
+        return res.status(400).send('Missing "Shop Name" parameter!!');
+    }
 })
+function verifyHmac(queryParams: any) {
+    const { hmac, ...params } = queryParams;
+    const sortedParams = Object.keys(params)
+        .sort()
+        .map((key) => `${key}=${params[key]}`)
+        .join('&');
 
+    const calculatedHmac = crypto
+        .createHmac('sha256', process.env.SHOPIFY_API_SECRET)
+        .update(sortedParams)
+        .digest('hex');
+
+    return hmac === calculatedHmac;
+}
+
+app.get("/shopify/callback", async (req, res) => {
+    const { shop, hmac, code, shopState } = req.query;
+    const stateCookie = cookie.parse(req.headers.cookie).shopState;
+    const validation = verifyHmac(req.query)
+
+    if (!validation) {
+        return res.status(400).send("HMAC validation failed");
+    }
+
+    const accessTokenPayload = {
+        client_id: process.env.SHOPIFY_API_KEY,
+        client_secret: process.env.SHOPIFY_API_SECRET,
+        code,
+    };
+
+    const getAccessToken = await fetch(`https://${shop}/admin/oauth/access_token`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(accessTokenPayload)
+    })
+
+    const getAccessTokenRes = await getAccessToken.json();
+    console.log(getAccessTokenRes)
+
+    
+
+})
 
 app.post("/webhooks/product/create", async (req, res) => {
     const hmac = req.get('X-Shopify-Hmac-Sha256')
@@ -84,7 +159,7 @@ app.post("/webhooks/product/update", async (req, res) => {
             req.body = JSON.parse(body.toString());
             const productData = req.body;
             const { id, title, images } = productData;
-            
+
             const productId = id.toString();
 
             let responses = [];
@@ -92,13 +167,13 @@ app.post("/webhooks/product/update", async (req, res) => {
             for (const image of images) {
                 const { id: imageId, src: url, width, height } = image;
                 const imageIdStr = imageId.toString();
-            
+
                 const existingImage = await db.image.findUnique({
                     where: { id: imageIdStr },
                 });
-            
+
                 if (existingImage) {
-                    let data:Image = {
+                    let data: Image = {
                         id: imageIdStr,
                         url,
                         productId: existingImage.productId,
@@ -113,7 +188,7 @@ app.post("/webhooks/product/update", async (req, res) => {
                     });
                     responses.push(response);
                 } else {
-                    let data:Image = {
+                    let data: Image = {
                         id: imageIdStr,
                         url,
                         productId,
@@ -127,8 +202,8 @@ app.post("/webhooks/product/update", async (req, res) => {
                     });
                     responses.push(response);
                 }
-            }            
-            
+            }
+
 
             res.status(200).json({ data: responses });
 

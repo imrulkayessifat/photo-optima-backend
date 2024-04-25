@@ -19,10 +19,24 @@ enum Status {
   COMPRESSED
 }
 
+enum Plan {
+  MICRO
+  PRO
+  ADVANCED
+}
+
+model User {
+  email   String    @id
+  plan    Plan      @default(MICRO)
+  product Product[]
+}
+
 model Product {
-  id     String  @id
-  title  String
-  images Image[]
+  id        String  @id
+  title     String
+  images    Image[]
+  userEmail String
+  user      User    @relation(fields: [userEmail], references: [email])
 }
 
 model Image {
