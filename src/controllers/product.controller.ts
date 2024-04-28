@@ -41,7 +41,6 @@ export const storeProductData = async (req: Request, res: Response): Promise<voi
             }
         })
 
-
         res.status(201).json({ data: product });
     } catch (e) {
         res.status(500).json({ error: 'An error occurred while storing product data.' });

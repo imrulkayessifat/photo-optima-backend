@@ -28,15 +28,15 @@ enum Plan {
 model User {
   email   String    @id
   plan    Plan      @default(MICRO)
-  product Product[]
+  // product Product[]
 }
 
 model Product {
   id        String  @id
   title     String
   images    Image[]
-  userEmail String
-  user      User    @relation(fields: [userEmail], references: [email])
+  // userEmail String
+  // user      User    @relation(fields: [userEmail], references: [email])
 }
 
 model Image {

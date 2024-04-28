@@ -20,15 +20,15 @@ const app = express();
 const port = process.env.PORT || 8080;
 const db = new PrismaClient();
 
-// app.use(express.json())
 
 const getRawBody = require('raw-body')
 const crypto = require('crypto')
-const secretKey = 'a1652530377ea8a602862f39dd54b2bb745b62cdf32427bba12dc79e9116b625'
-const apiKey = process.env.SHOPIFY_API_KEY;
-const apiSecret = process.env.SHOPIFY_API_SECRET;
+
+const webhooks_secret_key = process.env.WEBHOOKS_SECRET_KEY;
+const client_id = process.env.SHOPIFY_CLIENT_ID;
+const client_secret = process.env.SHOPIFY_CLIENT_SECRET;
 const scopes = "write_products";
-const forwardingAddress = "https://a935-182-163-119-50.ngrok-free.app";
+const forwardingAddress = process.env.FORWARDING_ADDRESS;
 
 app.use(cors());
 app.options('*', cors());
@@ -49,14 +49,15 @@ app.get("/shopify", (req, res) => {
             "https://" +
             shopName +
             "/admin/oauth/authorize?client_id=" +
-            apiKey +
+            client_id +
             "&scope=" +
             scopes +
             "&state=" +
             shopState +
             "&redirect_uri=" +
-            redirectURL+
+            redirectURL +
             "&grant_options[]=per-user";
+        console.log(installUrl)
         res.cookie("state", shopState);
         // redirect the user to the installUrl
         res.redirect(installUrl);
@@ -72,7 +73,7 @@ function verifyHmac(queryParams: any) {
         .join('&');
 
     const calculatedHmac = crypto
-        .createHmac('sha256', process.env.SHOPIFY_API_SECRET)
+        .createHmac('sha256', process.env.SHOPIFY_CLIENT_SECRET)
         .update(sortedParams)
         .digest('hex');
 
@@ -89,8 +90,8 @@ app.get("/shopify/callback", async (req, res) => {
     }
 
     const accessTokenPayload = {
-        client_id: process.env.SHOPIFY_API_KEY,
-        client_secret: process.env.SHOPIFY_API_SECRET,
+        client_id: process.env.SHOPIFY_CLIENT_ID,
+        client_secret: process.env.SHOPIFY_CLIENT_SECRET,
         code,
     };
 
@@ -104,8 +105,9 @@ app.get("/shopify/callback", async (req, res) => {
 
     const getAccessTokenRes = await getAccessToken.json();
     console.log(getAccessTokenRes)
+    res.redirect('http://rnzlx-59-153-103-54.a.free.pinggy.link')
 
-    
+
 
 })
 
@@ -115,7 +117,7 @@ app.post("/webhooks/product/create", async (req, res) => {
     const body = await getRawBody(req)
 
     const hash = crypto
-        .createHmac('sha256', secretKey)
+        .createHmac('sha256', webhooks_secret_key)
         .update(body, 'utf8', 'hex')
         .digest('base64')
 
@@ -150,7 +152,7 @@ app.post("/webhooks/product/update", async (req, res) => {
     const body = await getRawBody(req)
 
     const hash = crypto
-        .createHmac('sha256', secretKey)
+        .createHmac('sha256', webhooks_secret_key)
         .update(body, 'utf8', 'hex')
         .digest('base64')
 
@@ -222,7 +224,7 @@ app.post("/webhooks/product/delete", async (req, res) => {
     const body = await getRawBody(req)
 
     const hash = crypto
-        .createHmac('sha256', secretKey)
+        .createHmac('sha256', webhooks_secret_key)
         .update(body, 'utf8', 'hex')
         .digest('base64')
 
@@ -328,22 +330,24 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             const data = await response.json();
 
-            const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
-                },
-            })
+            console.log("new compress image : ", data)
 
-            const deleteImageRes = await deleteImage.json();
+            // const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
+            //     method: 'DELETE',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //         'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
+            //     },
+            // })
+
+            // const deleteImageRes = await deleteImage.json();
 
 
-            const removeImageFromCustomDB = await db.image.delete({
-                where: {
-                    id
-                }
-            })
+            // const removeImageFromCustomDB = await db.image.delete({
+            //     where: {
+            //         id
+            //     }
+            // })
 
 
         }, {
@@ -396,4 +400,3 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 app.listen(port, () => {
     console.log(`server up and running on port: ${port}`)
 })
-
