@@ -27,7 +27,7 @@ const crypto = require('crypto')
 const webhooks_secret_key = process.env.WEBHOOKS_SECRET_KEY;
 const client_id = process.env.SHOPIFY_CLIENT_ID;
 const client_secret = process.env.SHOPIFY_CLIENT_SECRET;
-const scopes = "write_products";
+const scopes = "read_orders";
 const forwardingAddress = process.env.FORWARDING_ADDRESS;
 
 app.use(cors());
@@ -57,7 +57,7 @@ app.get("/shopify", (req, res) => {
             "&redirect_uri=" +
             redirectURL +
             "&grant_options[]=per-user";
-        console.log(installUrl)
+
         res.cookie("state", shopState);
         // redirect the user to the installUrl
         res.redirect(installUrl);
@@ -65,6 +65,7 @@ app.get("/shopify", (req, res) => {
         return res.status(400).send('Missing "Shop Name" parameter!!');
     }
 })
+
 function verifyHmac(queryParams: any) {
     const { hmac, ...params } = queryParams;
     const sortedParams = Object.keys(params)
@@ -83,6 +84,11 @@ function verifyHmac(queryParams: any) {
 app.get("/shopify/callback", async (req, res) => {
     const { shop, hmac, code, shopState } = req.query;
     const stateCookie = cookie.parse(req.headers.cookie).shopState;
+
+    if (shopState !== stateCookie) {
+        return res.status(400).send("request origin cannot be found");
+    }
+
     const validation = verifyHmac(req.query)
 
     if (!validation) {
@@ -105,9 +111,29 @@ app.get("/shopify/callback", async (req, res) => {
 
     const getAccessTokenRes = await getAccessToken.json();
     console.log(getAccessTokenRes)
-    res.redirect('http://rnzlx-59-153-103-54.a.free.pinggy.link')
+    const emails = await db.user.findMany({
+        where: {
+            email: getAccessTokenRes.associated_user.email
+        }
+    })
 
+    console.log(emails.length)
 
+    if (emails.length === 0) {
+        await db.user.create({
+            data: {
+                email: getAccessTokenRes.associated_user.email
+            }
+        })
+    }
+
+    if (getAccessTokenRes.scope.includes('write_products')) {
+        res.redirect(`https://rnitb-182-163-119-50.a.free.pinggy.link?shop=${shop}&access_token=${getAccessTokenRes.access_token}`);
+        // res.status(200).json({ data: getAccessTokenRes });
+    } else {
+        console.error("Access token doesn't have write_products scope:", getAccessTokenRes.access_token);
+        return res.status(403).send("Access token doesn't have necessary scopes");
+    }
 
 })
 
@@ -233,7 +259,7 @@ app.post("/webhooks/product/delete", async (req, res) => {
         try {
             req.body = JSON.parse(body.toString());
             const productData = req.body;
-            console.log("web hooks deletion : ", productData)
+
         } catch (e) {
             res.status(500).json({ error: 'An error occurred while storing product data.' });
         }
@@ -332,22 +358,22 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             console.log("new compress image : ", data)
 
-            // const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
-            //     method: 'DELETE',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //         'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
-            //     },
-            // })
+            const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
+                },
+            })
 
-            // const deleteImageRes = await deleteImage.json();
+            const deleteImageRes = await deleteImage.json();
 
 
-            // const removeImageFromCustomDB = await db.image.delete({
-            //     where: {
-            //         id
-            //     }
-            // })
+            const removeImageFromCustomDB = await db.image.delete({
+                where: {
+                    id
+                }
+            })
 
 
         }, {
