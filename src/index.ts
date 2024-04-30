@@ -14,7 +14,7 @@ import cors from 'cors';
 
 import productRouter from './routes/product.router';
 import imageRouter from './routes/image.router';
-import compressRouter from './routes/compress.router';
+import subscribeRouter from './routes/subscribe.router';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -35,6 +35,7 @@ app.options('*', cors());
 
 app.use("/products", productRouter);
 app.use("/images", imageRouter);
+app.use("/subscribe", subscribeRouter)
 
 app.get("/shopify", (req, res) => {
     const shopName = req.query.shop;
@@ -110,25 +111,9 @@ app.get("/shopify/callback", async (req, res) => {
     })
 
     const getAccessTokenRes = await getAccessToken.json();
-    console.log(getAccessTokenRes)
-    const emails = await db.user.findMany({
-        where: {
-            email: getAccessTokenRes.associated_user.email
-        }
-    })
-
-    console.log(emails.length)
-
-    if (emails.length === 0) {
-        await db.user.create({
-            data: {
-                email: getAccessTokenRes.associated_user.email
-            }
-        })
-    }
 
     if (getAccessTokenRes.scope.includes('write_products')) {
-        res.redirect(`https://rnitb-182-163-119-50.a.free.pinggy.link?shop=${shop}&access_token=${getAccessTokenRes.access_token}`);
+        res.redirect(`${process.env.FRONTEND_DOMAIN}?shop=${shop}&access_token=${getAccessTokenRes.access_token}`);
         // res.status(200).json({ data: getAccessTokenRes });
     } else {
         console.error("Access token doesn't have write_products scope:", getAccessTokenRes.access_token);
@@ -138,7 +123,9 @@ app.get("/shopify/callback", async (req, res) => {
 })
 
 app.post("/webhooks/product/create", async (req, res) => {
+    const shopDomain = req.get('x-shopify-shop-domain')
     const hmac = req.get('X-Shopify-Hmac-Sha256')
+    console.log(req.headers)
 
     const body = await getRawBody(req)
 
@@ -155,10 +142,27 @@ app.post("/webhooks/product/create", async (req, res) => {
             const { id, title } = productData;
             const productId = id.toString();
 
+
+
+            const storeCount = await db.store.findMany({
+                where: {
+                    name: shopDomain
+                }
+            })
+
+            if (storeCount.length === 0) {
+                await db.store.create({
+                    data: {
+                        name: shopDomain!
+                    }
+                })
+            }
+
             const product = await db.product.create({
                 data: {
                     id: productId,
-                    title
+                    storename: shopDomain!,
+                    title,
                 }
             })
 
@@ -356,8 +360,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             const data = await response.json();
 
-            console.log("new compress image : ", data)
-
             const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
                 method: 'DELETE',
                 headers: {
@@ -368,13 +370,16 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             const deleteImageRes = await deleteImage.json();
 
+            console.log("delete image from shopify store : ", deleteImageRes)
+
+            console.log("previous image id ", id)
 
             const removeImageFromCustomDB = await db.image.delete({
                 where: {
                     id
                 }
             })
-
+            console.log(removeImageFromCustomDB)
 
         }, {
             noAck: true

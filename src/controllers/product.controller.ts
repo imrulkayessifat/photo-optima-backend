@@ -28,24 +28,24 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
 };
 
 
-export const storeProductData = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const productData = req.body;
+// export const storeProductData = async (req: Request, res: Response): Promise<void> => {
+//     try {
+//         const productData = req.body;
 
-        const { id, title } = productData;
+//         const { id, title } = productData;
 
-        const product = await db.product.create({
-            data: {
-                id,
-                title
-            }
-        })
+//         const product = await db.product.create({
+//             data: {
+//                 id,
+//                 title
+//             }
+//         })
 
-        res.status(201).json({ data: product });
-    } catch (e) {
-        res.status(500).json({ error: 'An error occurred while storing product data.' });
-    }
-};
+//         res.status(201).json({ data: product });
+//     } catch (e) {
+//         res.status(500).json({ error: 'An error occurred while storing product data.' });
+//     }
+// };
 
 export const deleteProductById = async (req: Request, res: Response): Promise<void> => {
     try {

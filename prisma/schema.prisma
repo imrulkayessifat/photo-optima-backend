@@ -25,18 +25,19 @@ enum Plan {
   ADVANCED
 }
 
-model User {
-  email   String    @id
-  plan    Plan      @default(MICRO)
-  // product Product[]
+model Store {
+  name     String    @id
+  plan     Plan      @default(MICRO)
+  dataUsed Float?     @default(0)
+  product  Product[]
 }
 
 model Product {
   id        String  @id
   title     String
   images    Image[]
-  // userEmail String
-  // user      User    @relation(fields: [userEmail], references: [email])
+  storename String
+  store     Store   @relation(fields: [storename], references: [name])
 }
 
 model Image {
