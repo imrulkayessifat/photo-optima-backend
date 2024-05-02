@@ -264,6 +264,22 @@ app.post("/webhooks/product/delete", async (req, res) => {
             req.body = JSON.parse(body.toString());
             const productData = req.body;
 
+            const res = await db.product.findMany({
+                where: {
+                    id: productData.id
+                }
+            })
+
+            console.log(res)
+
+            if (res.length > 0) {
+                await db.product.delete({
+                    where: {
+                        id: productData.id
+                    }
+                })
+            }
+
         } catch (e) {
             res.status(500).json({ error: 'An error occurred while storing product data.' });
         }
@@ -294,20 +310,60 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             const data = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { id, productid, url } = data;
+            const { id, productid, url, storeName } = data;
 
             const response = await axios.get(url, { responseType: 'arraybuffer' });
             const buffer = Buffer.from(response.data, 'binary');
 
+            const megabytes = (buffer.length / 1024) / 1024;
+
             const compressedBuffer = await sharp(buffer).resize(300, 300).jpeg({ quality: 60 }).toBuffer();
 
-            fs.writeFileSync('hello.jpg', compressedBuffer);
+            // fs.writeFileSync('hello.jpg', compressedBuffer);
+
+            const subscriptionPlan = {
+                "MICRO": 500,
+                "PRO": 2048,
+                "ADVANCED": 5120
+            }
 
             // Update the status in the database
             const updatedImage = await db.image.update({
                 where: { id: id },
                 data: { status: 'COMPRESSED' },
             });
+
+            const store = await db.store.findMany({
+                where: {
+                    name: storeName
+                }
+            })
+
+            if (store.length > 0 && store[0].dataUsed !== null) {
+                const usedData = megabytes + store[0].dataUsed
+                const updatedData = await db.store.update({
+                    where: {
+                        name: storeName
+                    },
+                    data: {
+                        dataUsed: usedData
+                    }
+                })
+                console.log("Updated Data : ", updatedData.dataUsed)
+
+                if (subscriptionPlan[updatedData.plan] < updatedData.dataUsed!) {
+                    console.log('canceled')
+
+                    await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/recurring_application_charges/${updatedData.chargeId}.json`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
+                        },
+                    })
+
+                }
+            }
+
 
             const uploadImage = await fetch('http://localhost:3001/upload-image', {
                 method: 'POST',

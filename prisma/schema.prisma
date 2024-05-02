@@ -28,7 +28,8 @@ enum Plan {
 model Store {
   name     String    @id
   plan     Plan      @default(MICRO)
-  dataUsed Float?     @default(0)
+  dataUsed Float?    @default(0)
+  chargeId String?
   product  Product[]
 }
 
