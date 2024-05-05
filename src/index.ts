@@ -112,6 +112,34 @@ app.get("/shopify/callback", async (req, res) => {
 
     const getAccessTokenRes = await getAccessToken.json();
 
+    const productsReq = await fetch(`https://${shop}/admin/api/2024-04/products.json`, {
+        headers: {
+            'X-Shopify-Access-Token': `${getAccessTokenRes.access_token}`,
+        },
+    })
+
+    const productRes = await productsReq.json();
+
+    productRes.products.map((product: { images: any[]; }) => {
+        product.images.map(async (image: any) => {
+            const getImage = await db.image.findFirst({
+                where: {
+                    id: `${image.id}`
+                }
+            })
+            if (!getImage) {
+                await db.image.create({
+                    data: {
+                        id: `${image.id}`,
+                        productId: `${image.product_id}`,
+                        url: image.src
+                    }
+                })
+            }
+            console.log("Product Images : ", getImage)
+        })
+    })
+
     if (getAccessTokenRes.scope.includes('write_products')) {
         res.redirect(`${process.env.FRONTEND_DOMAIN}?shop=${shop}&access_token=${getAccessTokenRes.access_token}`);
         // res.status(200).json({ data: getAccessTokenRes });
