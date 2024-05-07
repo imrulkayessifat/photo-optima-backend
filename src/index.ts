@@ -37,6 +37,11 @@ app.use("/products", productRouter);
 app.use("/images", imageRouter);
 app.use("/subscribe", subscribeRouter)
 
+interface AccessTokenType {
+    access_token: string;
+    scope: string;
+}
+
 app.get("/shopify", (req, res) => {
     const shopName = req.query.shop;
     if (shopName) {
@@ -120,6 +125,22 @@ app.get("/shopify/callback", async (req, res) => {
 
     const productRes = await productsReq.json();
 
+    const storeCount = await db.store.findMany({
+        where: {
+            name: `${shop}`
+        }
+    })
+
+    if (storeCount.length === 0) {
+        await db.store.create({
+            data: {
+                name: `${shop}`
+            }
+        })
+    }
+
+
+
     productRes.products.map((product: { images: any[]; }) => {
         product.images.map(async (image: any) => {
             const getImage = await db.image.findFirst({
@@ -136,7 +157,7 @@ app.get("/shopify/callback", async (req, res) => {
                     }
                 })
             }
-            console.log("Product Images : ", getImage)
+
         })
     })
 
@@ -153,7 +174,6 @@ app.get("/shopify/callback", async (req, res) => {
 app.post("/webhooks/product/create", async (req, res) => {
     const shopDomain = req.get('x-shopify-shop-domain')
     const hmac = req.get('X-Shopify-Hmac-Sha256')
-    console.log(req.headers)
 
     const body = await getRawBody(req)
 
@@ -169,7 +189,6 @@ app.post("/webhooks/product/create", async (req, res) => {
             const productData = req.body;
             const { id, title } = productData;
             const productId = id.toString();
-
 
 
             const storeCount = await db.store.findMany({
@@ -220,6 +239,7 @@ app.post("/webhooks/product/update", async (req, res) => {
             const productData = req.body;
             const { id, title, images } = productData;
 
+
             const productId = id.toString();
 
             let responses = [];
@@ -232,12 +252,17 @@ app.post("/webhooks/product/update", async (req, res) => {
                     where: { id: imageIdStr },
                 });
 
+                const newUrl = new URL(url);
+                const name = newUrl.pathname.split('/').pop() || null;
+
+
                 if (existingImage) {
                     let data: Image = {
                         id: imageIdStr,
                         url,
                         productId: existingImage.productId,
-                        status: existingImage.status
+                        status: existingImage.status,
+                        name: existingImage.name
                     };
                     if (width === 300 && height === 300) {
                         data.status = 'COMPRESSED';
@@ -251,6 +276,7 @@ app.post("/webhooks/product/update", async (req, res) => {
                     let data: Image = {
                         id: imageIdStr,
                         url,
+                        name,
                         productId,
                         status: 'NOT_COMPRESSED'
                     };
@@ -298,7 +324,6 @@ app.post("/webhooks/product/delete", async (req, res) => {
                 }
             })
 
-            console.log(res)
 
             if (res.length > 0) {
                 await db.product.delete({
@@ -350,6 +375,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             // fs.writeFileSync('hello.jpg', compressedBuffer);
 
             const subscriptionPlan = {
+                "FREE": 25,
                 "MICRO": 500,
                 "PRO": 2048,
                 "ADVANCED": 5120
@@ -377,15 +403,27 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                         dataUsed: usedData
                     }
                 })
-                console.log("Updated Data : ", updatedData.dataUsed)
+
+                const accessTokenResponse = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        'client_id': `${process.env.SHOPIFY_CLIENT_ID}`,
+                        'client_secret': `${process.env.SHOPIFY_CLIENT_SECRET}`,
+                        'grant_type': 'client_credentials'
+                    })
+                })
+
+                const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
                 if (subscriptionPlan[updatedData.plan] < updatedData.dataUsed!) {
-                    console.log('canceled')
 
                     await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/recurring_application_charges/${updatedData.chargeId}.json`, {
                         method: 'DELETE',
                         headers: {
-                            'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
+                            'X-Shopify-Access-Token': `${accessToken.access_token}`
                         },
                     })
 
@@ -432,11 +470,25 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 attachment: base64Image,
             };
 
+            const accessTokenResponse = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    'client_id': `${process.env.SHOPIFY_CLIENT_ID}`,
+                    'client_secret': `${process.env.SHOPIFY_CLIENT_SECRET}`,
+                    'grant_type': 'client_credentials'
+                })
+            })
+
+            const accessToken = await accessTokenResponse.json() as AccessTokenType;
+
             const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
+                    'X-Shopify-Access-Token': `${accessToken.access_token}`
                 },
                 body: JSON.stringify({ image })
             })
@@ -444,26 +496,23 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             const data = await response.json();
 
+            // console.log(productid, id)
+
             const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Shopify-Access-Token': `${process.env.SHOPIFY_ADMIN_ACCESS_TOKEN}`
+                    'X-Shopify-Access-Token': `${accessToken.access_token}`
                 },
             })
 
             const deleteImageRes = await deleteImage.json();
 
-            console.log("delete image from shopify store : ", deleteImageRes)
-
-            console.log("previous image id ", id)
-
             const removeImageFromCustomDB = await db.image.delete({
                 where: {
-                    id
+                    id: `${id}`
                 }
             })
-            console.log(removeImageFromCustomDB)
 
         }, {
             noAck: true

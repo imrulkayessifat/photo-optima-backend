@@ -20,6 +20,7 @@ enum Status {
 }
 
 enum Plan {
+  FREE
   MICRO
   PRO
   ADVANCED
@@ -27,7 +28,7 @@ enum Plan {
 
 model Store {
   name     String    @id
-  plan     Plan      @default(MICRO)
+  plan     Plan      @default(FREE)
   dataUsed Float?    @default(0)
   chargeId String?
   product  Product[]
@@ -44,6 +45,7 @@ model Product {
 model Image {
   id        String  @id
   url       String
+  name      String?
   productId String
   status    Status? @default(NOT_COMPRESSED)
   product   Product @relation(fields: [productId], references: [id])

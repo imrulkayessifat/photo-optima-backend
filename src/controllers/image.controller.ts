@@ -31,9 +31,9 @@ export const getImageById = async (req: Request, res: Response): Promise<void> =
 export const getImageStatus = async (req: Request, res: Response): Promise<void> => {
     try {
         const imageId = req.params.id;
-        console.log("Image id : ",imageId)
+        
         const image = await db.image.findUnique({ where: { id: imageId } });
-        console.log("Image Status : ",image)
+        
         res.status(200).json({ status: image!.status });
     } catch (error) {
         res.status(500).json({ error: 'An error occurred while fetching image status.' });
@@ -43,7 +43,7 @@ export const getImageStatus = async (req: Request, res: Response): Promise<void>
 export const getImageByProductId = async (req: Request, res: Response): Promise<void> => {
     try {
         const productId = req.params.id;
-        console.log(productId)
+        
         const images = await db.image.findMany({
             where: {
                 productId: productId,

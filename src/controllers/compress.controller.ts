@@ -6,7 +6,6 @@ export const compressData = async (req: Request, res: Response): Promise<void> =
         const compressData = req.body;
 
         const { id } = compressData;
-        console.log(id)
 
         res.status(201).json({ data: compressData });
     } catch (e) {
