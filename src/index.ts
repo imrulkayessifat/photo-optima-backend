@@ -245,7 +245,7 @@ app.post("/webhooks/product/update", async (req, res) => {
             let responses = [];
 
             for (const image of images) {
-                const { id: imageId, src: url, width, height } = image;
+                const { id: imageId, src: url, width, height,alt } = image;
                 const imageIdStr = imageId.toString();
 
                 const existingImage = await db.image.findUnique({
@@ -262,7 +262,8 @@ app.post("/webhooks/product/update", async (req, res) => {
                         url,
                         productId: existingImage.productId,
                         status: existingImage.status,
-                        name: existingImage.name
+                        name: existingImage.name,
+                        alt:existingImage.alt
                     };
                     if (width === 300 && height === 300) {
                         data.status = 'COMPRESSED';
@@ -277,6 +278,7 @@ app.post("/webhooks/product/update", async (req, res) => {
                         id: imageIdStr,
                         url,
                         name,
+                        alt,
                         productId,
                         status: 'NOT_COMPRESSED'
                     };
