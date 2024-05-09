@@ -1,20 +1,16 @@
 import express from 'express';
 import sharp from "sharp";
 import axios from "axios";
-import fs from "fs";
+
 const amqp = require('amqplib/callback_api');
 const nonce = require("nonce");
-const querystring = require("querystring");
 const cookie = require("cookie");
-const request = require("request-promise");
 
 import { PrismaClient } from "@prisma/client";
 import { Image } from '@prisma/client';
 import cors from 'cors';
 
-import productRouter from './routes/product.router';
 import imageRouter from './routes/image.router';
-import subscribeRouter from './routes/subscribe.router';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -26,16 +22,13 @@ const crypto = require('crypto')
 
 const webhooks_secret_key = process.env.WEBHOOKS_SECRET_KEY;
 const client_id = process.env.SHOPIFY_CLIENT_ID;
-const client_secret = process.env.SHOPIFY_CLIENT_SECRET;
 const scopes = "read_orders";
 const forwardingAddress = process.env.FORWARDING_ADDRESS;
 
 app.use(cors());
 app.options('*', cors());
 
-app.use("/products", productRouter);
 app.use("/images", imageRouter);
-app.use("/subscribe", subscribeRouter)
 
 interface AccessTokenType {
     access_token: string;
@@ -302,46 +295,6 @@ app.post("/webhooks/product/update", async (req, res) => {
     } else {
         res.status(403).json({ error: "you don't have access" })
     }
-})
-
-app.post("/webhooks/product/delete", async (req, res) => {
-    const hmac = req.get('X-Shopify-Hmac-Sha256')
-
-    const body = await getRawBody(req)
-
-    const hash = crypto
-        .createHmac('sha256', webhooks_secret_key)
-        .update(body, 'utf8', 'hex')
-        .digest('base64')
-
-
-    if (hmac === hash) {
-        try {
-            req.body = JSON.parse(body.toString());
-            const productData = req.body;
-
-            const res = await db.product.findMany({
-                where: {
-                    id: productData.id
-                }
-            })
-
-
-            if (res.length > 0) {
-                await db.product.delete({
-                    where: {
-                        id: productData.id
-                    }
-                })
-            }
-
-        } catch (e) {
-            res.status(500).json({ error: 'An error occurred while storing product data.' });
-        }
-    } else {
-        res.status(403).json({ error: "you don't have access" })
-    }
-
 })
 
 amqp.connect('amqp://localhost', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
