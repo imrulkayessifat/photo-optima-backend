@@ -1,301 +1,30 @@
-import express from 'express';
-import sharp from "sharp";
+import cors from 'cors';
+import http from 'http';
 import axios from "axios";
-
-const amqp = require('amqplib/callback_api');
-const nonce = require("nonce");
-const cookie = require("cookie");
+import sharp from "sharp";
+import express from 'express';
+import bodyParser from 'body-parser'
 
 import { PrismaClient } from "@prisma/client";
-import { Image } from '@prisma/client';
-import cors from 'cors';
 
-import imageRouter from './routes/image.router';
+import { AccessTokenType } from 'types/type';
+import shopifyRouter from './routes/shopify.router';
+import productRouter from './routes/product.router';
+
+const amqp = require('amqplib/callback_api');
 
 const app = express();
+const server = http.createServer(app)
 const port = process.env.PORT || 8080;
 const db = new PrismaClient();
-
-
-const getRawBody = require('raw-body')
-const crypto = require('crypto')
-
-const webhooks_secret_key = process.env.WEBHOOKS_SECRET_KEY;
-const client_id = process.env.SHOPIFY_CLIENT_ID;
-const scopes = "read_orders";
-const forwardingAddress = process.env.FORWARDING_ADDRESS;
 
 app.use(cors());
 app.options('*', cors());
 
-app.use("/images", imageRouter);
+app.use("/shopify", shopifyRouter)
+app.use("/webhooks", productRouter)
 
-interface AccessTokenType {
-    access_token: string;
-    scope: string;
-}
-
-app.get("/shopify", (req, res) => {
-    const shopName = req.query.shop;
-    if (shopName) {
-
-        const shopState = nonce();
-
-        const redirectURL = forwardingAddress + "/shopify/callback";
-
-        // install url for app install
-        const installUrl =
-            "https://" +
-            shopName +
-            "/admin/oauth/authorize?client_id=" +
-            client_id +
-            "&scope=" +
-            scopes +
-            "&state=" +
-            shopState +
-            "&redirect_uri=" +
-            redirectURL +
-            "&grant_options[]=per-user";
-
-        res.cookie("state", shopState);
-        // redirect the user to the installUrl
-        res.redirect(installUrl);
-    } else {
-        return res.status(400).send('Missing "Shop Name" parameter!!');
-    }
-})
-
-function verifyHmac(queryParams: any) {
-    const { hmac, ...params } = queryParams;
-    const sortedParams = Object.keys(params)
-        .sort()
-        .map((key) => `${key}=${params[key]}`)
-        .join('&');
-
-    const calculatedHmac = crypto
-        .createHmac('sha256', process.env.SHOPIFY_CLIENT_SECRET)
-        .update(sortedParams)
-        .digest('hex');
-
-    return hmac === calculatedHmac;
-}
-
-app.get("/shopify/callback", async (req, res) => {
-    const { shop, hmac, code, shopState } = req.query;
-    const stateCookie = cookie.parse(req.headers.cookie).shopState;
-
-    if (shopState !== stateCookie) {
-        return res.status(400).send("request origin cannot be found");
-    }
-
-    const validation = verifyHmac(req.query)
-
-    if (!validation) {
-        return res.status(400).send("HMAC validation failed");
-    }
-
-    const accessTokenPayload = {
-        client_id: process.env.SHOPIFY_CLIENT_ID,
-        client_secret: process.env.SHOPIFY_CLIENT_SECRET,
-        code,
-    };
-
-    const getAccessToken = await fetch(`https://${shop}/admin/oauth/access_token`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(accessTokenPayload)
-    })
-
-    const getAccessTokenRes = await getAccessToken.json();
-
-    const productsReq = await fetch(`https://${shop}/admin/api/2024-04/products.json`, {
-        headers: {
-            'X-Shopify-Access-Token': `${getAccessTokenRes.access_token}`,
-        },
-    })
-
-    const productRes = await productsReq.json();
-
-    const storeCount = await db.store.findMany({
-        where: {
-            name: `${shop}`
-        }
-    })
-
-    if (storeCount.length === 0) {
-        await db.store.create({
-            data: {
-                name: `${shop}`
-            }
-        })
-    }
-
-
-
-    productRes.products.map((product: { images: any[]; }) => {
-        product.images.map(async (image: any) => {
-            const getImage = await db.image.findFirst({
-                where: {
-                    id: `${image.id}`
-                }
-            })
-            if (!getImage) {
-                await db.image.create({
-                    data: {
-                        id: `${image.id}`,
-                        productId: `${image.product_id}`,
-                        url: image.src
-                    }
-                })
-            }
-
-        })
-    })
-
-    if (getAccessTokenRes.scope.includes('write_products')) {
-        res.redirect(`${process.env.FRONTEND_DOMAIN}?shop=${shop}&access_token=${getAccessTokenRes.access_token}`);
-        // res.status(200).json({ data: getAccessTokenRes });
-    } else {
-        console.error("Access token doesn't have write_products scope:", getAccessTokenRes.access_token);
-        return res.status(403).send("Access token doesn't have necessary scopes");
-    }
-
-})
-
-app.post("/webhooks/product/create", async (req, res) => {
-    const shopDomain = req.get('x-shopify-shop-domain')
-    const hmac = req.get('X-Shopify-Hmac-Sha256')
-
-    const body = await getRawBody(req)
-
-    const hash = crypto
-        .createHmac('sha256', webhooks_secret_key)
-        .update(body, 'utf8', 'hex')
-        .digest('base64')
-
-
-    if (hmac === hash) {
-        try {
-            req.body = JSON.parse(body.toString());
-            const productData = req.body;
-            const { id, title } = productData;
-            const productId = id.toString();
-
-
-            const storeCount = await db.store.findMany({
-                where: {
-                    name: shopDomain
-                }
-            })
-
-            if (storeCount.length === 0) {
-                await db.store.create({
-                    data: {
-                        name: shopDomain!
-                    }
-                })
-            }
-
-            const product = await db.product.create({
-                data: {
-                    id: productId,
-                    storename: shopDomain!,
-                    title,
-                }
-            })
-
-            res.status(201).json({ data: product });
-        } catch (e) {
-            res.status(500).json({ error: 'An error occurred while storing product data.' });
-        }
-    } else {
-        res.status(403).json({ error: "you don't have access" })
-    }
-
-})
-
-app.post("/webhooks/product/update", async (req, res) => {
-    const hmac = req.get('X-Shopify-Hmac-Sha256')
-
-    const body = await getRawBody(req)
-
-    const hash = crypto
-        .createHmac('sha256', webhooks_secret_key)
-        .update(body, 'utf8', 'hex')
-        .digest('base64')
-
-    if (hmac === hash) {
-        try {
-            req.body = JSON.parse(body.toString());
-            const productData = req.body;
-            const { id, title, images } = productData;
-
-
-            const productId = id.toString();
-
-            let responses = [];
-
-            for (const image of images) {
-                const { id: imageId, src: url, width, height,alt } = image;
-                const imageIdStr = imageId.toString();
-
-                const existingImage = await db.image.findUnique({
-                    where: { id: imageIdStr },
-                });
-
-                const newUrl = new URL(url);
-                const name = newUrl.pathname.split('/').pop() || null;
-
-
-                if (existingImage) {
-                    let data: Image = {
-                        id: imageIdStr,
-                        url,
-                        productId: existingImage.productId,
-                        status: existingImage.status,
-                        name: existingImage.name,
-                        alt:existingImage.alt
-                    };
-                    if (width === 300 && height === 300) {
-                        data.status = 'COMPRESSED';
-                    }
-                    const response = await db.image.update({
-                        where: { id: imageIdStr },
-                        data,
-                    });
-                    responses.push(response);
-                } else {
-                    let data: Image = {
-                        id: imageIdStr,
-                        url,
-                        name,
-                        alt,
-                        productId,
-                        status: 'NOT_COMPRESSED'
-                    };
-                    if (width === 300 && height === 300) {
-                        data.status = 'COMPRESSED';
-                    }
-                    const response = await db.image.create({
-                        data,
-                    });
-                    responses.push(response);
-                }
-            }
-
-
-            res.status(200).json({ data: responses });
-
-        } catch (e) {
-            console.error(e);
-            res.status(500).json({ error: 'An error occurred while updating product data.' });
-        }
-    } else {
-        res.status(403).json({ error: "you don't have access" })
-    }
-})
+app.use(bodyParser.json());
 
 amqp.connect('amqp://localhost', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
     if (error0) {
@@ -386,7 +115,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             }
 
 
-            const uploadImage = await fetch('http://localhost:3001/upload-image', {
+            const uploadImage = await fetch('http://localhost:3001/image/upload-image', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -451,8 +180,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             const data = await response.json();
 
-            // console.log(productid, id)
-
             const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
                 method: 'DELETE',
                 headers: {
@@ -502,7 +229,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 data: { status: 'COMPRESSED' },
             });
 
-            const uploadImage = await fetch('http://localhost:3001/upload-image', {
+            const uploadImage = await fetch('http://localhost:3001/image/upload-image', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -516,6 +243,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
     });
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`server up and running on port: ${port}`)
 })
