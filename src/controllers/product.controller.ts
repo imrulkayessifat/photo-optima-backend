@@ -9,23 +9,24 @@ const getRawBody = require('raw-body')
 
 const webhooks_secret_key = process.env.WEBHOOKS_SECRET_KEY;
 
-export const productCreate = async (req: Request, res: Response): Promise<void> => {
+export const productCreate = async (req:any, res:any) => {
     const shopDomain = req.get('x-shopify-shop-domain')
-    
+
     const hmac = req.get('X-Shopify-Hmac-Sha256')
-    // const body = await getRawBody(req)
+    const body = await getRawBody(req)
 
     const hash = crypto
         .createHmac('sha256', webhooks_secret_key)
-        .update(req.body, 'utf8', 'hex')
+        .update(body, 'utf8', 'hex')
         .digest('base64')
-
 
     if (hmac === hash) {
         try {
-            req.body = JSON.parse(req.body.toString());
+            req.body = JSON.parse(body.toString());
             const productData = req.body;
             const { id, title } = productData;
+
+            console.log(productData)
             const productId = id.toString();
 
 
@@ -50,6 +51,8 @@ export const productCreate = async (req: Request, res: Response): Promise<void> 
                     title,
                 }
             })
+
+            console.log(product)
 
             res.status(201).json({ data: product });
         } catch (e) {
