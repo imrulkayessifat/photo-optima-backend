@@ -10,6 +10,7 @@ import { PrismaClient } from "@prisma/client";
 import { AccessTokenType } from 'types/type';
 import shopifyRouter from './routes/shopify.router';
 import productRouter from './routes/product.router';
+import fileUploadRouter from './routes/file-upload.router';
 
 const amqp = require('amqplib/callback_api');
 
@@ -23,7 +24,8 @@ app.options('*', cors());
 // app.use(bodyParser.json());
 
 app.use("/shopify", shopifyRouter)
-app.use("/webhooks", productRouter)
+app.use("/webhooks/product", productRouter)
+app.use("/webhooks/file", fileUploadRouter)
 
 
 amqp.connect('amqp://localhost', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {

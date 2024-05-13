@@ -7,7 +7,7 @@ import {
 
 const productRouter = Router()
 
-productRouter.post('/product/create', productCreate)
-productRouter.post('/product/update', productUpdate)
+productRouter.post('/create', productCreate)
+productRouter.post('/update', productUpdate)
 
 export default productRouter;
