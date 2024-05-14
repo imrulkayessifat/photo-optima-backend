@@ -4,6 +4,7 @@ import axios from "axios";
 import sharp from "sharp";
 import express from 'express';
 import bodyParser from 'body-parser'
+import { uploadFile } from '@uploadcare/upload-client'
 
 import { PrismaClient } from "@prisma/client";
 
@@ -148,50 +149,70 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             // Access id and url from the data
             const { id, productid, compressedBuffer } = content;
 
-
             const base64Image = Buffer.from(compressedBuffer).toString('base64');
 
-            const image = {
-                product_id: productid,
-                attachment: base64Image,
-            };
+            if (productid !== '1') {
+                const image = {
+                    product_id: productid,
+                    attachment: base64Image,
+                };
 
-            const accessTokenResponse = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    'client_id': `${process.env.SHOPIFY_CLIENT_ID}`,
-                    'client_secret': `${process.env.SHOPIFY_CLIENT_SECRET}`,
-                    'grant_type': 'client_credentials'
+                const accessTokenResponse = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        'client_id': `${process.env.SHOPIFY_CLIENT_ID}`,
+                        'client_secret': `${process.env.SHOPIFY_CLIENT_SECRET}`,
+                        'grant_type': 'client_credentials'
+                    })
                 })
-            })
 
-            const accessToken = await accessTokenResponse.json() as AccessTokenType;
+                const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
-            const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Shopify-Access-Token': `${accessToken.access_token}`
-                },
-                body: JSON.stringify({ image })
-            })
+                const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Shopify-Access-Token': `${accessToken.access_token}`
+                    },
+                    body: JSON.stringify({ image })
+                })
 
 
-            const data = await response.json();
+                const data = await response.json();
 
-            const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Shopify-Access-Token': `${accessToken.access_token}`
-                },
-            })
+                const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Shopify-Access-Token': `${accessToken.access_token}`
+                    },
+                })
 
-            const deleteImageRes = await deleteImage.json();
+                const deleteImageRes = await deleteImage.json();
+            } else {
+                const base64Image2 = Buffer.from(compressedBuffer);
+                const data = await uploadFile(
+                    base64Image2,
+                    {
+                        publicKey: 'c0bc9dbd97f5de75c062',
+                        store: 'auto',
+                        metadata: {
+                            subsystem: 'js-client',
+                            pet: `COMPRESSED_${id}`
+                        }
+                    }
+                )
 
+                const deleteFileReq = await fetch(`http://localhost:8080/webhooks/file/upload/${id}`, {
+                    method: 'DELETE'
+                })
+
+                const deleteFileRes = await deleteFileReq.json();
+                console.log("Delete File :", deleteFileRes)
+            }
             const removeImageFromCustomDB = await db.image.delete({
                 where: {
                     id: `${id}`
