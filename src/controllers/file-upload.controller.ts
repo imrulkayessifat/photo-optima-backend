@@ -36,7 +36,7 @@ export const fileUpload = async (req: Request, res: Response): Promise<void> => 
 export const fileDelete = async (req: Request, res: Response): Promise<void> => {
     const uuid = req.params.id;
 
-console.log("uuid",uuid)
+    console.log("uuid", uuid)
     const result = await deleteFile(
         {
             uuid: `${uuid}`,
