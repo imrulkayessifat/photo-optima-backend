@@ -171,18 +171,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
                 const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
-                const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Shopify-Access-Token': `${accessToken.access_token}`
-                    },
-                    body: JSON.stringify({ image })
-                })
-
-
-                const data = await response.json();
-
                 const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
                     method: 'DELETE',
                     headers: {
@@ -191,33 +179,60 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     },
                 })
 
-                const deleteImageRes = await deleteImage.json();
+                if (deleteImage.status === 200) {
+                    const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Shopify-Access-Token': `${accessToken.access_token}`
+                        },
+                        body: JSON.stringify({ image })
+                    })
+
+                    const data = await response.json();
+
+                }
+
+
             } else {
                 const base64Image2 = Buffer.from(compressedBuffer);
-                const data = await uploadFile(
-                    base64Image2,
-                    {
-                        publicKey: 'c0bc9dbd97f5de75c062',
-                        store: 'auto',
-                        metadata: {
-                            subsystem: 'js-client',
-                            pet: `COMPRESSED_${id}`
-                        }
-                    }
-                )
 
-                const deleteFileReq = await fetch(`http://localhost:8080/webhooks/file/upload/${id}`, {
-                    method: 'DELETE'
+                const getUploadcareImage = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
+                    headers: {
+                        'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
+                    }
                 })
 
-                const deleteFileRes = await deleteFileReq.json();
-                console.log("Delete File :", deleteFileRes)
-            }
-            const removeImageFromCustomDB = await db.image.delete({
-                where: {
-                    id: `${id}`
+                if (getUploadcareImage.status === 200) {
+                    const deleteFileReq = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
+                        }
+                    })
+                    const data = await uploadFile(
+                        base64Image2,
+                        {
+                            publicKey: 'c0bc9dbd97f5de75c062',
+                            store: 'auto',
+                            metadata: {
+                                subsystem: 'js-client',
+                                pet: `COMPRESSED_${id}`
+                            }
+                        }
+                    )
                 }
-            })
+
+            }
+
+            const existImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`)
+
+            if (existImageFromCustomDB.status === 200) {
+                const removeImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`, {
+                    method: 'DELETE'
+                })
+            }
+
 
         }, {
             noAck: true

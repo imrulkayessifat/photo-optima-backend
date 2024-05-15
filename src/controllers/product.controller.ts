@@ -26,7 +26,6 @@ export const productCreate = async (req:any, res:any) => {
             const productData = req.body;
             const { id, title } = productData;
 
-            console.log(productData)
             const productId = id.toString();
 
 
@@ -51,8 +50,6 @@ export const productCreate = async (req:any, res:any) => {
                     title,
                 }
             })
-
-            console.log(product)
 
             res.status(201).json({ data: product });
         } catch (e) {
