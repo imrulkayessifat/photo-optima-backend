@@ -136,6 +136,112 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             throw error1;
         }
 
+        const queue = 'auto_compression';
+
+        channel.assertQueue(queue, {
+            durable: false
+        });
+
+
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
+
+            const data = JSON.parse(msg.content.toString());
+
+            // Access id and url from the data
+            const { id, productId: productid, url, store_name: storeName } = data;
+            console.log("auto_compression : ", data)
+            const getStoreData = await db.store.findFirst({
+                where: {
+                    name: storeName
+                }
+            })
+
+            if (getStoreData.autoCompression) {
+                const response = await axios.get(url, { responseType: 'arraybuffer' });
+                const buffer = Buffer.from(response.data, 'binary');
+
+                const megabytes = (buffer.length / 1024) / 1024;
+
+                const compressedBuffer = await sharp(buffer).resize(300, 300).jpeg({ quality: 60 }).toBuffer();
+
+                // fs.writeFileSync('hello.jpg', compressedBuffer);
+
+                const subscriptionPlan = {
+                    "FREE": 25,
+                    "MICRO": 500,
+                    "PRO": 2048,
+                    "ADVANCED": 5120
+                }
+
+                // Update the status in the database
+                const updatedImage = await db.image.update({
+                    where: { id: id },
+                    data: { status: 'COMPRESSED' },
+                });
+
+                const store = await db.store.findMany({
+                    where: {
+                        name: storeName
+                    }
+                })
+
+                if (store.length > 0 && store[0].dataUsed !== null) {
+                    const usedData = megabytes + store[0].dataUsed
+                    const updatedData = await db.store.update({
+                        where: {
+                            name: storeName
+                        },
+                        data: {
+                            dataUsed: usedData
+                        }
+                    })
+
+                    const accessTokenResponse = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            'client_id': `${process.env.SHOPIFY_CLIENT_ID}`,
+                            'client_secret': `${process.env.SHOPIFY_CLIENT_SECRET}`,
+                            'grant_type': 'client_credentials'
+                        })
+                    })
+
+                    const accessToken = await accessTokenResponse.json() as AccessTokenType;
+
+                    if (subscriptionPlan[updatedData.plan] < updatedData.dataUsed!) {
+
+                        await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/recurring_application_charges/${updatedData.chargeId}.json`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-Shopify-Access-Token': `${accessToken.access_token}`
+                            },
+                        })
+
+                    }
+                }
+
+
+                const uploadImage = await fetch('http://localhost:3001/image/upload-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id, productid, compressedBuffer })
+                })
+            }
+
+        }, {
+            noAck: true
+        });
+    });
+
+    connection.createChannel(function (error1, channel) {
+        if (error1) {
+            throw error1;
+        }
+
         const queue = 'compressor_to_uploader';
 
         channel.assertQueue(queue, {
