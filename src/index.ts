@@ -57,7 +57,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             const megabytes = (buffer.length / 1024) / 1024;
 
-            const compressedBuffer = await sharp(buffer).resize(300, 300).jpeg({ quality: 60 }).toBuffer();
+            const compressedBuffer = await sharp(buffer).jpeg({ quality: 60 }).toBuffer();
 
             // fs.writeFileSync('hello.jpg', compressedBuffer);
 
@@ -149,7 +149,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             // Access id and url from the data
             const { id, productId: productid, url, store_name: storeName } = data;
-            console.log("auto_compression : ", data)
+
             const getStoreData = await db.store.findFirst({
                 where: {
                     name: storeName
@@ -259,6 +259,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             if (productid !== '1') {
                 const image = {
+                    alt: 'COMPRESSED',
                     product_id: productid,
                     attachment: base64Image,
                 };
@@ -276,6 +277,20 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 })
 
                 const accessToken = await accessTokenResponse.json() as AccessTokenType;
+
+                const getImageData = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Shopify-Access-Token': `${accessToken.access_token}`
+                    },
+                })
+
+                const getImageDataRes = await getImageData.json()
+
+                const response = await axios.get(getImageDataRes.image.src, { responseType: 'arraybuffer' });
+                const buffer = Buffer.from(response.data, 'binary');
+                const base64ImageForBackup = Buffer.from(buffer).toString('base64');
+
 
                 const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
                     method: 'DELETE',
@@ -296,6 +311,13 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     })
 
                     const data = await response.json();
+
+                    await db.backup.create({
+                        data: {
+                            restoreId: `${data.image.id}`,
+                            url: base64ImageForBackup
+                        }
+                    })
 
                 }
 
@@ -380,6 +402,148 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 },
                 body: JSON.stringify({ id, productid, compressedBuffer })
             })
+
+        }, {
+            noAck: true
+        });
+    });
+
+    connection.createChannel(function (error1, channel) {
+        if (error1) {
+            throw error1;
+        }
+
+        const queue = 'restore_image';
+
+        channel.assertQueue(queue, {
+            durable: false
+        });
+
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
+
+            const data = JSON.parse(msg.content.toString());
+
+            // Access id and url from the data
+            const { id, productid, url } = data;
+
+            const uploadImage = await fetch('http://localhost:3001/image/restore-upload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id, productid, url })
+            })
+
+        }, {
+            noAck: true
+        });
+    });
+
+    connection.createChannel(function (error1, channel) {
+        if (error1) {
+            throw error1;
+        }
+
+        const queue = 'restore_to_uploader';
+
+        channel.assertQueue(queue, {
+            durable: false
+        });
+
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
+
+            const content = JSON.parse(msg.content.toString());
+
+            // Access id and url from the data
+            const { id, productid, url } = content;
+
+
+            console.log(id, productid)
+
+            if (productid !== '1') {
+                const image = {
+                    product_id: productid,
+                    attachment: url,
+                };
+
+                const accessTokenResponse = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        'client_id': `${process.env.SHOPIFY_CLIENT_ID}`,
+                        'client_secret': `${process.env.SHOPIFY_CLIENT_SECRET}`,
+                        'grant_type': 'client_credentials'
+                    })
+                })
+
+                const accessToken = await accessTokenResponse.json() as AccessTokenType;
+
+                
+
+                const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Shopify-Access-Token': `${accessToken.access_token}`
+                    },
+                })
+
+                if (deleteImage.status === 200) {
+                    const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Shopify-Access-Token': `${accessToken.access_token}`
+                        },
+                        body: JSON.stringify({ image })
+                    })
+
+                    const data = await response.json();
+
+                }
+
+
+            } else {
+                const base64Image2 = url;
+
+                const getUploadcareImage = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
+                    headers: {
+                        'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
+                    }
+                })
+
+                if (getUploadcareImage.status === 200) {
+                    const deleteFileReq = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
+                        }
+                    })
+                    const data = await uploadFile(
+                        base64Image2,
+                        {
+                            publicKey: 'c0bc9dbd97f5de75c062',
+                            store: 'auto',
+                            metadata: {
+                                subsystem: 'js-client',
+                                pet: `COMPRESSED_${id}`
+                            }
+                        }
+                    )
+                }
+
+            }
+
+            const existImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`)
+
+            if (existImageFromCustomDB.status === 200) {
+                const removeImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`, {
+                    method: 'DELETE'
+                })
+            }
+
 
         }, {
             noAck: true

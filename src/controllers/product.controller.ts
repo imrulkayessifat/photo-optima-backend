@@ -9,7 +9,7 @@ const getRawBody = require('raw-body')
 
 const webhooks_secret_key = process.env.WEBHOOKS_SECRET_KEY;
 
-export const productCreate = async (req:any, res:any) => {
+export const productCreate = async (req: any, res: any) => {
     const shopDomain = req.get('x-shopify-shop-domain')
 
     const hmac = req.get('X-Shopify-Hmac-Sha256')
@@ -19,6 +19,8 @@ export const productCreate = async (req:any, res:any) => {
         .createHmac('sha256', webhooks_secret_key)
         .update(body, 'utf8', 'hex')
         .digest('base64')
+
+    console.log(hmac === hash)
 
     if (hmac === hash) {
         try {
@@ -74,8 +76,8 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
         try {
             req.body = JSON.parse(body.toString());
             const productData = req.body;
-            const { id, title, images } = productData;
-
+            const { id, title, images, alt } = productData;
+            
 
             const productId = id.toString();
 
@@ -102,7 +104,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         name: existingImage.name,
                         alt: existingImage.alt
                     };
-                    if (width === 300 && height === 300) {
+                    if (alt === 'COMPRESSED') {
                         data.status = 'COMPRESSED';
                     }
                     const response = await db.image.update({
@@ -119,7 +121,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         productId,
                         status: 'NOT_COMPRESSED'
                     };
-                    if (width === 300 && height === 300) {
+                    if (alt === 'COMPRESSED') {
                         data.status = 'COMPRESSED';
                     }
                     const response = await db.image.create({

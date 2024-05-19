@@ -52,3 +52,8 @@ model Image {
   status    Status? @default(NOT_COMPRESSED)
   product   Product @relation(fields: [productId], references: [id])
 }
+
+model Backup {
+  restoreId String @id
+  url       String
+}
