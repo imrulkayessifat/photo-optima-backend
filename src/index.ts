@@ -3,6 +3,7 @@ import http from 'http';
 import axios from "axios";
 import sharp from "sharp";
 import express from 'express';
+
 import bodyParser from 'body-parser'
 import { uploadFile } from '@uploadcare/upload-client'
 
@@ -14,6 +15,8 @@ import productRouter from './routes/product.router';
 import fileUploadRouter from './routes/file-upload.router';
 
 const amqp = require('amqplib/callback_api');
+const fs = require('fs');
+
 
 const app = express();
 const server = http.createServer(app)
@@ -325,13 +328,27 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             } else {
                 const base64Image2 = Buffer.from(compressedBuffer);
 
-                const getUploadcareImage = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
+                const getUploadcareImageStatus = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
                     headers: {
                         'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
                     }
                 })
 
-                if (getUploadcareImage.status === 200) {
+                const getUploadcareImageUrl = await fetch(`https://api.uploadcare.com/files/${id}/`, {
+                    headers: {
+                        'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
+                    }
+                })
+
+                const originalFilePath = await getUploadcareImageUrl.json();
+
+                const response = await axios.get(originalFilePath.original_file_url, { responseType: 'arraybuffer' });
+
+                const buffer = Buffer.from(response.data, 'binary');
+                const bufferString = Buffer.from(buffer).toString('base64');
+                fs.writeFileSync('hello1.jpg', buffer)
+
+                if (getUploadcareImageStatus.status === 200) {
                     const deleteFileReq = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
                         method: 'DELETE',
                         headers: {
@@ -349,6 +366,12 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                             }
                         }
                     )
+                    await db.backup.create({
+                        data: {
+                            restoreId: `${data.uuid}`,
+                            url: bufferString
+                        }
+                    })
                 }
 
             }
@@ -480,7 +503,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
                 const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
-                
+
 
                 const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
                     method: 'DELETE',
@@ -506,7 +529,11 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
 
             } else {
-                const base64Image2 = url;
+
+                const base64Image3 = Buffer.from(url, 'base64');
+
+
+                fs.writeFileSync('hello2.jpg', base64Image3)
 
                 const getUploadcareImage = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
                     headers: {
@@ -521,19 +548,31 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                             'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
                         }
                     })
+
+
                     const data = await uploadFile(
-                        base64Image2,
+                        base64Image3,
                         {
                             publicKey: 'c0bc9dbd97f5de75c062',
                             store: 'auto',
                             metadata: {
                                 subsystem: 'js-client',
-                                pet: `COMPRESSED_${id}`
+                                pet: `NOTCOMPRESSED`
                             }
                         }
                     )
+
+
                 }
 
+            }
+
+            const existBackupImageFromCustomDB = await fetch(`http://localhost:3001/backup/${id}`)
+
+            if (existBackupImageFromCustomDB.status === 200) {
+                const removeImageFromCustomDB = await fetch(`http://localhost:3001/backup/${id}`, {
+                    method: 'DELETE'
+                })
             }
 
             const existImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`)

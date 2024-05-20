@@ -77,8 +77,8 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
             req.body = JSON.parse(body.toString());
             const productData = req.body;
             const { id, title, images, alt } = productData;
-            
 
+            // console.log("product data", productData)
             const productId = id.toString();
 
             let responses = [];
