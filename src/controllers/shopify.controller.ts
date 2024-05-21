@@ -5,6 +5,7 @@ import { verifyHmac } from "../lib/utils";
 
 const nonce = require("nonce");
 const cookie = require("cookie");
+const jwt = require('jsonwebtoken');
 
 const db = new PrismaClient();
 
@@ -90,6 +91,14 @@ export const shopifyCallback = async (req: Request, res: Response): Promise<void
                 name: `${shop}`
             }
         })
+
+        await db.product.create({
+            data:{
+                id:'1',
+                title:'uploadcare',
+                storename:`${shop}`
+            }
+        })
     }
 
 
@@ -114,8 +123,16 @@ export const shopifyCallback = async (req: Request, res: Response): Promise<void
         })
     })
 
+    const storeData = await db.store.findFirst({
+    	where:{
+    		name: `${shop}`
+    	}
+    })
+
+    const token = jwt.sign(storeData, process.env.JWT_SECRET_KEY);
+
     if (getAccessTokenRes.scope.includes('write_products')) {
-        res.redirect(`${process.env.FRONTEND_DOMAIN}?shop=${shop}&access_token=${getAccessTokenRes.access_token}`);
+        res.redirect(`${process.env.FRONTEND_DOMAIN}?shop=${shop}&storeToken=${token}`);
         // res.status(200).json({ data: getAccessTokenRes });
     } else {
         console.error("Access token doesn't have write_products scope:", getAccessTokenRes.access_token);
