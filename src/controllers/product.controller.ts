@@ -78,7 +78,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
             const productData = req.body;
             const { id, title, images, alt } = productData;
 
-            console.log("product data", images)
+           
             const productId = id.toString();
 
             let responses = [];

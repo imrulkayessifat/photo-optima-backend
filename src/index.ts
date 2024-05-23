@@ -31,6 +31,10 @@ app.use("/shopify", shopifyRouter)
 app.use("/webhooks/product", productRouter)
 app.use("/webhooks/file", fileUploadRouter)
 
+app.get("/", (req, res) => {
+    res.json({ message: "demo shahi" }).status(200);
+});
+
 
 amqp.connect('amqp://localhost', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
     if (error0) {
@@ -481,7 +485,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             const { id, productid, url } = content;
 
 
-            console.log(id, productid)
+           
 
             if (productid !== '1') {
                 const image = {
