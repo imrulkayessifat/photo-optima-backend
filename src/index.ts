@@ -76,10 +76,10 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             }
 
             // Update the status in the database
-            const updatedImage = await db.image.update({
-                where: { id: id },
-                data: { status: 'COMPRESSED' },
-            });
+            // const updatedImage = await db.image.update({
+            //     where: { id: id },
+            //     data: { status: 'COMPRESSED' },
+            // });
 
             const store = await db.store.findMany({
                 where: {
@@ -359,6 +359,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                             'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
                         }
                     })
+
                     const data = await uploadFile(
                         base64Image2,
                         {
@@ -379,7 +380,10 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
 
             }
-
+            const updatedImage = await db.image.update({
+                where: { id: id },
+                data: { status: 'COMPRESSED' },
+            });
             const existImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`)
 
             if (existImageFromCustomDB.status === 200) {
@@ -485,7 +489,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             const { id, productid, url } = content;
 
 
-           
+
 
             if (productid !== '1') {
                 const image = {
