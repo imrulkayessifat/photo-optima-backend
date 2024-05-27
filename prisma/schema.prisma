@@ -16,6 +16,7 @@ datasource db {
 enum Status {
   NOT_COMPRESSED
   ONGOING
+  RESTORING
   COMPRESSED
 }
 

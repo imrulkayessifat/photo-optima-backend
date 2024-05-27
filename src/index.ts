@@ -169,7 +169,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
                 const megabytes = (buffer.length / 1024) / 1024;
 
-                const compressedBuffer = await sharp(buffer).resize(300, 300).jpeg({ quality: 60 }).toBuffer();
+                const compressedBuffer = await sharp(buffer).jpeg({ quality: 60 }).toBuffer();
 
                 // fs.writeFileSync('hello.jpg', compressedBuffer);
 
@@ -181,10 +181,10 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
 
                 // Update the status in the database
-                const updatedImage = await db.image.update({
-                    where: { id: id },
-                    data: { status: 'COMPRESSED' },
-                });
+                // const updatedImage = await db.image.update({
+                //     where: { id: id },
+                //     data: { status: 'COMPRESSED' },
+                // });
 
                 const store = await db.store.findMany({
                     where: {
@@ -229,7 +229,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     }
                 }
 
-
+                console.log(id,productid)
                 const uploadImage = await fetch('http://localhost:3001/image/upload-image', {
                     method: 'POST',
                     headers: {
@@ -380,13 +380,14 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
 
             }
-            const updatedImage = await db.image.update({
-                where: { id: id },
-                data: { status: 'COMPRESSED' },
-            });
+            
             const existImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`)
 
             if (existImageFromCustomDB.status === 200) {
+                const updatedImage = await db.image.update({
+                    where: { id: id },
+                    data: { status: 'COMPRESSED' },
+                });
                 const removeImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`, {
                     method: 'DELETE'
                 })
