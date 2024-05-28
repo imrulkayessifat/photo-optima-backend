@@ -264,9 +264,21 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             const base64Image = Buffer.from(compressedBuffer).toString('base64');
 
+            const singleImageData = await db.image.findFirst({
+                where:{
+                    id:id
+                }
+            })
+
+            const singleProductData = await db.product.findFirst({
+                where:{
+                    id:productid
+                }
+            })
+
             if (productid !== '1') {
                 const image = {
-                    alt: 'COMPRESSED',
+                    alt: `${singleProductData.title}-${id}C.${singleImageData.name.split('.').pop()}`,
                     product_id: productid,
                     attachment: base64Image,
                 };

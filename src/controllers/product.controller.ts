@@ -78,7 +78,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
             const productData = req.body;
             const { id, title, images, alt } = productData;
 
-           
+
             const productId = id.toString();
 
             let responses = [];
@@ -104,7 +104,10 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         name: existingImage.name,
                         alt: existingImage.alt
                     };
-                    if (alt === 'COMPRESSED') {
+                    if (alt === null) {
+                        data.status = 'NOT_COMPRESSED'
+                    }
+                    else if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
                         data.status = 'COMPRESSED';
                     }
                     const response = await db.image.update({
@@ -121,7 +124,10 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         productId,
                         status: 'NOT_COMPRESSED'
                     };
-                    if (alt === 'COMPRESSED') {
+                    if (alt === null) {
+                        data.status = 'NOT_COMPRESSED'
+                    }
+                    else if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
                         data.status = 'COMPRESSED';
                     }
                     const response = await db.image.create({
