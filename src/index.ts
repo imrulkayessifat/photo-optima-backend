@@ -59,12 +59,39 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             // Access id and url from the data
             const { id, productid, url, storeName } = data;
 
+            const store = await db.store.findFirst({
+                where: {
+                    name: storeName
+                }
+            })
+
             const response = await axios.get(url, { responseType: 'arraybuffer' });
             const buffer = Buffer.from(response.data, 'binary');
 
             const megabytes = (buffer.length / 1024) / 1024;
 
-            const compressedBuffer = await sharp(buffer).jpeg({ quality: 60 }).toBuffer();
+            let qualifyPercenties;
+
+            const uint8Array = new Uint8Array(buffer);
+            const header = uint8Array.subarray(0, 4);
+
+            if (store.compressionType === 'BALANCED') {
+                qualifyPercenties = 80
+            } else if (store.compressionType === 'CONSERVATIVE') {
+                qualifyPercenties = 65;
+            } else {
+                if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47) {
+                    qualifyPercenties = store.png;
+                } else if (header[0] === 0xFF && header[1] === 0xD8 && header[2] === 0xFF) {
+                    qualifyPercenties = store.jpeg;
+                } else {
+                    qualifyPercenties = store.others
+                }
+            }
+
+            console.log("qualifyPercenties : ",qualifyPercenties)
+
+            const compressedBuffer = await sharp(buffer).jpeg({ quality: qualifyPercenties }).toBuffer();
 
             // fs.writeFileSync('hello.jpg', compressedBuffer);
 
@@ -81,14 +108,9 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             //     data: { status: 'COMPRESSED' },
             // });
 
-            const store = await db.store.findMany({
-                where: {
-                    name: storeName
-                }
-            })
 
-            if (store.length > 0 && store[0].dataUsed !== null) {
-                const usedData = megabytes + store[0].dataUsed
+            if (store.dataUsed !== null) {
+                const usedData = megabytes + store.dataUsed
                 const updatedData = await db.store.update({
                     where: {
                         name: storeName
@@ -169,7 +191,28 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
                 const megabytes = (buffer.length / 1024) / 1024;
 
-                const compressedBuffer = await sharp(buffer).jpeg({ quality: 60 }).toBuffer();
+                const uint8Array = new Uint8Array(buffer);
+                const header = uint8Array.subarray(0, 4);
+
+                let qualifyPercenties;
+
+                if (getStoreData.compressionType === 'BALANCED') {
+                    qualifyPercenties = 80
+                } else if (getStoreData.compressionType === 'CONSERVATIVE') {
+                    qualifyPercenties = 65;
+                } else {
+                    if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47) {
+                        qualifyPercenties = getStoreData.png;
+                    } else if (header[0] === 0xFF && header[1] === 0xD8 && header[2] === 0xFF) {
+                        qualifyPercenties = getStoreData.jpeg;
+                    } else {
+                        qualifyPercenties = getStoreData.others
+                    }
+                }
+
+                console.log(qualifyPercenties)
+
+                const compressedBuffer = await sharp(buffer).jpeg({ quality: qualifyPercenties }).toBuffer();
 
                 // fs.writeFileSync('hello.jpg', compressedBuffer);
 
@@ -229,7 +272,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     }
                 }
 
-                console.log(id,productid)
+                console.log(id, productid)
                 const uploadImage = await fetch('http://localhost:3001/image/upload-image', {
                     method: 'POST',
                     headers: {
@@ -265,14 +308,14 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             const base64Image = Buffer.from(compressedBuffer).toString('base64');
 
             const singleImageData = await db.image.findFirst({
-                where:{
-                    id:id
+                where: {
+                    id: id
                 }
             })
 
             const singleProductData = await db.product.findFirst({
-                where:{
-                    id:productid
+                where: {
+                    id: productid
                 }
             })
 
@@ -392,7 +435,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
 
             }
-            
+
             const existImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`)
 
             if (existImageFromCustomDB.status === 200) {
