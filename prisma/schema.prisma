@@ -39,6 +39,8 @@ model Store {
   dataUsed        Float?        @default(0)
   chargeId        String?
   autoCompression Boolean       @default(false)
+  autoFileRename  Boolean       @default(false)
+  autoAltRename   Boolean       @default(false)
   compressionType CompressType? @default(BALANCED)
   jpeg            Float?        @default(80)
   png             Float?        @default(80)

@@ -64,6 +64,7 @@ export const productCreate = async (req: any, res: any) => {
 
 export const productUpdate = async (req: Request, res: Response): Promise<void> => {
     const hmac = req.get('X-Shopify-Hmac-Sha256')
+    const shopDomain = req.get('x-shopify-shop-domain')
 
     const body = await getRawBody(req)
 
@@ -133,7 +134,37 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     const response = await db.image.create({
                         data,
                     });
+
+
                     responses.push(response);
+                }
+
+                const storeRes = await db.store.findFirst({
+                    where: {
+                        name: shopDomain
+                    }
+                })
+
+                if (storeRes.autoCompression) {
+                    const imageRes = await db.image.findFirst({
+                        where: {
+                            id: imageIdStr
+                        }
+                    })
+                    if (imageRes.status === 'NOT_COMPRESSED') {
+                        const response =  fetch(`http://localhost:3001/image/compress-image`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                id: imageRes.id,
+                                productid: imageRes.productId,
+                                url: imageRes.url,
+                                storeName: shopDomain
+                            })
+                        });
+                    }
                 }
             }
 
