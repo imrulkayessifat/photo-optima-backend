@@ -319,6 +319,8 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
             })
 
+            console.log(id,productid)
+
             if (productid !== '1') {
                 const image = {
                     alt: `${singleProductData.title}-${id}C.${singleImageData.name.split('.').pop()}`,
