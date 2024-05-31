@@ -46,14 +46,49 @@ model Store {
   png             Float?        @default(80)
   others          Float?        @default(80)
   product         Product[]
+  filerename      Filerename[]
+  altrename       Altrename[]
+}
+
+model Filerename {
+  id                 String  @id
+  product_vendor     Boolean @default(false)
+  variant_title      Boolean @default(false)
+  product_page_title Boolean @default(false)
+  product_type       Boolean @default(false)
+  product_barcode    Boolean @default(false)
+  product_title      Boolean @default(true)
+  product_sku        Boolean @default(false)
+  storename          String
+  store              Store   @relation(fields: [storename], references: [name])
+}
+
+model Altrename {
+  id                 String  @id
+  product_vendor     Boolean @default(false)
+  variant_title      Boolean @default(false)
+  product_page_title Boolean @default(false)
+  product_type       Boolean @default(false)
+  product_barcode    Boolean @default(false)
+  product_title      Boolean @default(true)
+  product_sku        Boolean @default(false)
+  storename          String
+  store              Store   @relation(fields: [storename], references: [name])
 }
 
 model Product {
-  id        String  @id
-  title     String
-  images    Image[]
-  storename String
-  store     Store   @relation(fields: [storename], references: [name])
+  id                 String  @id
+  title              String
+  images             Image[]
+  product_vendor     String?  @default("")
+  variant_title      String?  @default("")
+  product_page_title String?  @default("")
+  product_type       String?  @default("")
+  product_barcode    String?  @default("")
+  product_title      String?  @default("")
+  product_sku        String?  @default("")
+  storename          String
+  store              Store   @relation(fields: [storename], references: [name])
 }
 
 model Image {

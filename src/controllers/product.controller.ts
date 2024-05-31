@@ -28,6 +28,8 @@ export const productCreate = async (req: any, res: any) => {
             const productData = req.body;
             const { id, title } = productData;
 
+            console.log("Product create : ", productData)
+
             const productId = id.toString();
 
 
@@ -78,9 +80,24 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
             req.body = JSON.parse(body.toString());
             const productData = req.body;
             const { id, title, images, alt } = productData;
-
+            console.log("Product update : ", productData)
 
             const productId = id.toString();
+
+            await db.product.update({
+                where: {
+                    id: productId
+                },
+                data: {
+                    product_vendor: productData.vendor,
+                    variant_title: productData.variants[0].title,
+                    product_page_title: productData.options[0].name,
+                    product_type: productData.product_type,
+                    product_barcode: productData.variants[0].barcode,
+                    product_title: productData.title,
+                    product_sku: productData.variants[0].sku,
+                }
+            })
 
             let responses = [];
 
@@ -152,7 +169,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         }
                     })
                     if (imageRes.status === 'NOT_COMPRESSED') {
-                        const response =  fetch(`http://localhost:3001/image/compress-image`, {
+                        const response = fetch(`http://localhost:3001/image/compress-image`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
