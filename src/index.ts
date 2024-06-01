@@ -89,7 +89,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
             }
 
-            console.log("qualifyPercenties : ",qualifyPercenties)
+            console.log("qualifyPercenties : ", qualifyPercenties)
 
             const compressedBuffer = await sharp(buffer).jpeg({ quality: qualifyPercenties }).toBuffer();
 
@@ -292,6 +292,98 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             throw error1;
         }
 
+        const queue = 'auto_file_rename';
+
+        channel.assertQueue(queue, {
+            durable: false
+        });
+
+
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
+
+            const data = JSON.parse(msg.content.toString());
+
+            // Access id and url from the data
+            const { id, store_name } = data;
+
+            const image = await db.image.findFirst({
+                where: {
+                    id: id
+                }
+            })
+
+            if (image) {
+                const req = await fetch('http://localhost:3001/rename/file-rename', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        storeName: store_name,
+                        id: `${id}`,
+                    })
+                })
+
+                const data = await req.json()
+                console.log(data)
+            }
+
+        }, {
+            noAck: true
+        });
+    });
+
+    connection.createChannel(function (error1, channel) {
+        if (error1) {
+            throw error1;
+        }
+
+        const queue = 'auto_alt_rename';
+
+        channel.assertQueue(queue, {
+            durable: false
+        });
+
+
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
+
+            const data = JSON.parse(msg.content.toString());
+
+            // Access id and url from the data
+            const { id, store_name } = data;
+
+            const image = await db.image.findFirst({
+                where: {
+                    id: id
+                }
+            })
+
+            if (image) {
+                const req = await fetch('http://localhost:3001/rename/alt-rename', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        storeName: store_name,
+                        id: `${id}`,
+                    })
+                })
+
+                const data = await req.json()
+                console.log(data)
+            }
+
+        }, {
+            noAck: true
+        });
+    });
+
+    connection.createChannel(function (error1, channel) {
+        if (error1) {
+            throw error1;
+        }
+
         const queue = 'compressor_to_uploader';
 
         channel.assertQueue(queue, {
@@ -319,7 +411,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
             })
 
-            console.log(id,productid)
+            console.log(id, productid)
 
             if (productid !== '1') {
                 const image = {

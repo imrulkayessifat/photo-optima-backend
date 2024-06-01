@@ -120,6 +120,8 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         productId: existingImage.productId,
                         status: existingImage.status,
                         name: existingImage.name,
+                        fileRename: existingImage.fileRename,
+                        altRename: existingImage.altRename,
                         alt: existingImage.alt
                     };
                     if (alt === null) {
@@ -139,6 +141,8 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         url,
                         name,
                         alt,
+                        fileRename: false,
+                        altRename: false,
                         productId,
                         status: 'NOT_COMPRESSED'
                     };

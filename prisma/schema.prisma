@@ -80,25 +80,27 @@ model Product {
   id                 String  @id
   title              String
   images             Image[]
-  product_vendor     String?  @default("")
-  variant_title      String?  @default("")
-  product_page_title String?  @default("")
-  product_type       String?  @default("")
-  product_barcode    String?  @default("")
-  product_title      String?  @default("")
-  product_sku        String?  @default("")
+  product_vendor     String? @default("")
+  variant_title      String? @default("")
+  product_page_title String? @default("")
+  product_type       String? @default("")
+  product_barcode    String? @default("")
+  product_title      String? @default("")
+  product_sku        String? @default("")
   storename          String
   store              Store   @relation(fields: [storename], references: [name])
 }
 
 model Image {
-  id        String  @id
-  url       String
-  name      String?
-  alt       String?
-  productId String
-  status    Status? @default(NOT_COMPRESSED)
-  product   Product @relation(fields: [productId], references: [id])
+  id         String   @id
+  url        String
+  name       String?
+  alt        String?
+  productId  String
+  status     Status?  @default(NOT_COMPRESSED)
+  fileRename Boolean? @default(false)
+  altRename  Boolean? @default(false)
+  product    Product  @relation(fields: [productId], references: [id])
 }
 
 model Backup {
