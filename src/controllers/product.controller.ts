@@ -187,6 +187,47 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         });
                     }
                 }
+                if (storeRes.autoFileRename) {
+                    const imageRes = await db.image.findFirst({
+                        where: {
+                            id: imageIdStr
+                        }
+                    })
+
+                    if (imageRes.id) {
+                        const req =  fetch('http://localhost:3001/rename/file-rename', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                storeName: shopDomain,
+                                id: `${imageRes.id}`,
+                            })
+                        })
+                    }
+                }
+
+                if (storeRes.autoAltRename) {
+                    const imageRes = await db.image.findFirst({
+                        where: {
+                            id: imageIdStr
+                        }
+                    })
+
+                    if (imageRes.id) {
+                        const req =  fetch('http://localhost:3001/rename/alt-rename', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                storeName: shopDomain,
+                                id: `${imageRes.id}`,
+                            })
+                        })
+                    }
+                }
             }
 
 
