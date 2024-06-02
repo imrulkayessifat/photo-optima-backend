@@ -65,6 +65,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
             })
 
+
             const response = await axios.get(url, { responseType: 'arraybuffer' });
             const buffer = Buffer.from(response.data, 'binary');
 
@@ -89,8 +90,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
             }
 
-            console.log("qualifyPercenties : ", qualifyPercenties)
-
             const compressedBuffer = await sharp(buffer).jpeg({ quality: qualifyPercenties }).toBuffer();
 
             // fs.writeFileSync('hello.jpg', compressedBuffer);
@@ -99,7 +98,10 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 "FREE": 25,
                 "MICRO": 500,
                 "PRO": 2048,
-                "ADVANCED": 5120
+                "ADVANCED": 5120,
+                "PREMIUM": 15360,
+                "PLUS": 51200,
+                "ENTERPRISE": 102400
             }
 
             // Update the status in the database
@@ -210,8 +212,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     }
                 }
 
-                console.log(qualifyPercenties)
-
                 const compressedBuffer = await sharp(buffer).jpeg({ quality: qualifyPercenties }).toBuffer();
 
                 // fs.writeFileSync('hello.jpg', compressedBuffer);
@@ -220,7 +220,10 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     "FREE": 25,
                     "MICRO": 500,
                     "PRO": 2048,
-                    "ADVANCED": 5120
+                    "ADVANCED": 5120,
+                    "PREMIUM": 15360,
+                    "PLUS": 51200,
+                    "ENTERPRISE": 102400
                 }
 
                 // Update the status in the database
@@ -272,7 +275,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     }
                 }
 
-                console.log(id, productid)
                 const uploadImage = await fetch('http://localhost:3001/image/upload-image', {
                     method: 'POST',
                     headers: {
@@ -325,7 +327,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 })
 
                 const data = await req.json()
-                console.log(data)
             }
 
         }, {
@@ -371,7 +372,6 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 })
 
                 const data = await req.json()
-                console.log(data)
             }
 
         }, {
@@ -411,11 +411,9 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
             })
 
-            console.log(id, productid)
-
             if (productid !== '1') {
                 const image = {
-                    alt: `${singleProductData.title}-${id}C.${singleImageData.name.split('.').pop()}`,
+                    alt: `${singleImageData.name.split('.').slice(0, -1).join('.')}-${id}C.${singleImageData.name.split('.').pop()}`,
                     product_id: productid,
                     attachment: base64Image,
                 };
@@ -468,10 +466,24 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
                     const data = await response.json();
 
-                    await db.backup.create({
+                    await db.backupimage.create({
                         data: {
                             restoreId: `${data.image.id}`,
                             url: base64ImageForBackup
+                        }
+                    })
+
+                    await db.backupfilename.create({
+                        data: {
+                            restoreId: `${data.image.id}`,
+                            name: `${singleImageData.name}`
+                        }
+                    })
+
+                    await db.backupaltname.create({
+                        data: {
+                            restoreId: `${data.image.id}`,
+                            alt: `${singleImageData.name}`
                         }
                     })
 
@@ -499,7 +511,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
                 const buffer = Buffer.from(response.data, 'binary');
                 const bufferString = Buffer.from(buffer).toString('base64');
-                fs.writeFileSync('hello1.jpg', buffer)
+                // fs.writeFileSync('hello1.jpg', buffer)
 
                 if (getUploadcareImageStatus.status === 200) {
                     const deleteFileReq = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
@@ -514,16 +526,31 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                         {
                             publicKey: 'c0bc9dbd97f5de75c062',
                             store: 'auto',
+                            fileName: `${singleImageData.name}`,
                             metadata: {
                                 subsystem: 'js-client',
                                 pet: `COMPRESSED_${id}`
                             }
                         }
                     )
-                    await db.backup.create({
+                    await db.backupimage.create({
                         data: {
                             restoreId: `${data.uuid}`,
                             url: bufferString
+                        }
+                    })
+
+                    await db.backupfilename.create({
+                        data: {
+                            restoreId: `${data.uuid}`,
+                            name: `${singleImageData.name}`
+                        }
+                    })
+
+                    await db.backupaltname.create({
+                        data: {
+                            restoreId: `${data.uuid}`,
+                            alt: `${singleImageData.name}`
                         }
                     })
                 }
@@ -639,10 +666,15 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             const { id, productid, url } = content;
 
 
-
+            const restoreFileName = await db.backupaltname.findFirst({
+                where:{
+                    restoreId:`${id}`
+                }
+            })
 
             if (productid !== '1') {
                 const image = {
+                    alt: `${restoreFileName.alt}`,
                     product_id: productid,
                     attachment: url,
                 };
@@ -683,6 +715,18 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
                     const data = await response.json();
 
+                    await db.backupfilename.delete({
+                        where:{
+                            restoreId:`${id}`
+                        }
+                    })
+
+                    await db.backupaltname.delete({
+                        where:{
+                            restoreId:`${id}`
+                        }
+                    })
+
                 }
 
 
@@ -707,12 +751,19 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                         }
                     })
 
+                    const restoreImageName = await db.backupfilename.findFirst({
+                        where: {
+                            restoreId: `${id}`
+                        }
+                    })
+
 
                     const data = await uploadFile(
                         base64Image3,
                         {
                             publicKey: 'c0bc9dbd97f5de75c062',
                             store: 'auto',
+                            fileName: `${restoreImageName.name}`,
                             metadata: {
                                 subsystem: 'js-client',
                                 pet: `NOTCOMPRESSED`
@@ -737,6 +788,22 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             if (existImageFromCustomDB.status === 200) {
                 const removeImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`, {
+                    method: 'DELETE'
+                })
+            }
+
+            const exitBackupFileNameFromCustomDB = await fetch(`http://localhost:3001/backup/filename/${id}`)
+
+            if (exitBackupFileNameFromCustomDB.status === 200) {
+                const removeFilenameFromCustomDB = await fetch(`http://localhost:3001/backup/filename/${id}`, {
+                    method: 'DELETE'
+                })
+            }
+
+            const exitBackupAltNameFromCustomDB = await fetch(`http://localhost:3001/backup/altname/${id}`)
+
+            if (exitBackupAltNameFromCustomDB.status === 200) {
+                const removeAltnameFromCustomDB = await fetch(`http://localhost:3001/backup/altname/${id}`, {
                     method: 'DELETE'
                 })
             }

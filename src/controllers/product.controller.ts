@@ -20,15 +20,11 @@ export const productCreate = async (req: any, res: any) => {
         .update(body, 'utf8', 'hex')
         .digest('base64')
 
-    console.log(hmac === hash)
-
     if (hmac === hash) {
         try {
             req.body = JSON.parse(body.toString());
             const productData = req.body;
             const { id, title } = productData;
-
-            console.log("Product create : ", productData)
 
             const productId = id.toString();
 
@@ -80,7 +76,6 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
             req.body = JSON.parse(body.toString());
             const productData = req.body;
             const { id, title, images, alt } = productData;
-            console.log("Product update : ", productData)
 
             const productId = id.toString();
 
@@ -104,6 +99,8 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
             for (const image of images) {
                 const { id: imageId, src: url, width, height, alt } = image;
                 const imageIdStr = imageId.toString();
+
+                console.log("alt",alt)
 
                 const existingImage = await db.image.findUnique({
                     where: { id: imageIdStr },
@@ -139,8 +136,8 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     let data: Image = {
                         id: imageIdStr,
                         url,
-                        name,
-                        alt,
+                        name: alt || name,
+                        alt: alt || name,
                         fileRename: false,
                         altRename: false,
                         productId,
@@ -195,7 +192,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     })
 
                     if (imageRes.id) {
-                        const req =  fetch('http://localhost:3001/rename/file-rename', {
+                        const req = fetch('http://localhost:3001/rename/file-rename', {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -216,7 +213,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     })
 
                     if (imageRes.id) {
-                        const req =  fetch('http://localhost:3001/rename/alt-rename', {
+                        const req = fetch('http://localhost:3001/rename/alt-rename', {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',

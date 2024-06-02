@@ -19,7 +19,7 @@ export const fileUpload = async (req: Request, res: Response): Promise<void> => 
     const body = await getRawBody(req);
     const imageData = JSON.parse(body.toString())
     const status = imageData.data.metadata.pet === 'NOTCOMPRESSED' ? 'NOT_COMPRESSED' : 'COMPRESSED'
-    
+    console.log("imageData : ", imageData)
     await db.image.create({
         data: {
             id: imageData.data.uuid,
@@ -37,14 +37,13 @@ export const fileDelete = async (req: Request, res: Response): Promise<void> => 
     try {
         const uuid = req.params.id;
 
-        console.log("uuid", uuid)
         const result = await deleteFile(
             {
                 uuid: `${uuid}`,
             },
             { authSchema: uploadcareSimpleAuthSchema }
         )
-        
+
         res.status(200).json({ data: result });
     } catch (error) {
         res.status(404).json({ error: 'An error occurred while fetching image status.' });

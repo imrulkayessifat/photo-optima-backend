@@ -25,6 +25,9 @@ enum Plan {
   MICRO
   PRO
   ADVANCED
+  PREMIUM
+  PLUS
+  ENTERPRISE
 }
 
 enum CompressType {
@@ -103,7 +106,17 @@ model Image {
   product    Product  @relation(fields: [productId], references: [id])
 }
 
-model Backup {
+model Backupimage {
   restoreId String @id
   url       String
+}
+
+model Backupfilename {
+  restoreId String @id
+  name      String
+}
+
+model Backupaltname {
+  restoreId String @id
+  alt       String
 }
