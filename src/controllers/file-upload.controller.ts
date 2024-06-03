@@ -19,7 +19,7 @@ export const fileUpload = async (req: Request, res: Response): Promise<void> => 
     const body = await getRawBody(req);
     const imageData = JSON.parse(body.toString())
     const status = imageData.data.metadata.pet === 'NOTCOMPRESSED' ? 'NOT_COMPRESSED' : 'COMPRESSED'
-    console.log("imageData : ", imageData)
+    
     await db.image.create({
         data: {
             id: imageData.data.uuid,

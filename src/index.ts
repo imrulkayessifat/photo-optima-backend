@@ -187,7 +187,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
             })
 
-            if (getStoreData.autoCompression) {
+            if (getStoreData.autoCompression || getStoreData.batchCompress) {
                 const response = await axios.get(url, { responseType: 'arraybuffer' });
                 const buffer = Buffer.from(response.data, 'binary');
 
@@ -280,7 +280,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ id, productid, compressedBuffer })
+                    body: JSON.stringify({ id, productid, compressedBuffer, storeName })
                 })
             }
 
@@ -395,7 +395,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             const content = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { id, productid, compressedBuffer } = content;
+            const { id, productid, compressedBuffer, storeName } = content;
 
             const base64Image = Buffer.from(compressedBuffer).toString('base64');
 
@@ -569,6 +569,15 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 })
             }
 
+            // await db.store.update({
+            //     where: {
+            //         name: storeName
+            //     },
+            //     data: {
+            //         batchCompress: false
+            //     }
+            // })
+
 
         }, {
             noAck: true
@@ -667,8 +676,8 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
 
             const restoreFileName = await db.backupaltname.findFirst({
-                where:{
-                    restoreId:`${id}`
+                where: {
+                    restoreId: `${id}`
                 }
             })
 
@@ -716,14 +725,14 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     const data = await response.json();
 
                     await db.backupfilename.delete({
-                        where:{
-                            restoreId:`${id}`
+                        where: {
+                            restoreId: `${id}`
                         }
                     })
 
                     await db.backupaltname.delete({
-                        where:{
-                            restoreId:`${id}`
+                        where: {
+                            restoreId: `${id}`
                         }
                     })
 

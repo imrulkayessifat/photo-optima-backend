@@ -16,7 +16,6 @@ const forwardingAddress = process.env.FORWARDING_ADDRESS;
 export const redirectUser = (req: Request, res: Response) => {
     const shopName = req.query.shop;
 
-    console.log("shop name : ",shopName)
     if (shopName) {
 
         const shopState = nonce();
@@ -45,7 +44,7 @@ export const redirectUser = (req: Request, res: Response) => {
 
 export const shopifyCallback = async (req: Request, res: Response): Promise<void> => {
     const { shop, hmac, code, shopState } = req.query;
-    console.log("shop ",shop)
+   
     const stateCookie = cookie.parse(req.headers.cookie).shopState;
 
     if (shopState !== stateCookie) {
@@ -134,7 +133,6 @@ export const shopifyCallback = async (req: Request, res: Response): Promise<void
 
     const token = jwt.sign(storeData, process.env.JWT_SECRET_KEY);
 
-    console.log("token : ",token);
 
     if (getAccessTokenRes.scope.includes('write_products')) {
         res.redirect(`${process.env.FRONTEND_DOMAIN}/token?shop=${shop}`);

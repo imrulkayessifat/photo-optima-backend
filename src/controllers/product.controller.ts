@@ -100,8 +100,6 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                 const { id: imageId, src: url, width, height, alt } = image;
                 const imageIdStr = imageId.toString();
 
-                console.log("alt",alt)
-
                 const existingImage = await db.image.findUnique({
                     where: { id: imageIdStr },
                 });

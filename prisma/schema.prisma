@@ -43,6 +43,8 @@ model Store {
   chargeId        String?
   autoCompression Boolean       @default(false)
   autoFileRename  Boolean       @default(false)
+  batchCompress   Boolean       @default(false)
+  batchRestore    Boolean       @default(false)
   autoAltRename   Boolean       @default(false)
   compressionType CompressType? @default(BALANCED)
   jpeg            Float?        @default(80)
