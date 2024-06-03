@@ -294,6 +294,46 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             throw error1;
         }
 
+        const queue = 'auto_restore';
+
+        channel.assertQueue(queue, {
+            durable: false
+        });
+
+
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
+
+            const data = JSON.parse(msg.content.toString());
+
+            // Access id and url from the data
+            const { id, productId: productid, url, store_name: storeName } = data;
+
+            const getStoreData = await db.store.findFirst({
+                where: {
+                    name: storeName
+                }
+            })
+
+            if (getStoreData.batchRestore) {
+                const uploadImage = await fetch('http://localhost:3001/image/restore-upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id, productid, url, storeName })
+                })
+            }
+
+        }, {
+            noAck: true
+        });
+    });
+
+    connection.createChannel(function (error1, channel) {
+        if (error1) {
+            throw error1;
+        }
+
         const queue = 'auto_file_rename';
 
         channel.assertQueue(queue, {
@@ -641,14 +681,14 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             const data = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { id, productid, url } = data;
+            const { id, productid, url, store_name } = data;
 
             const uploadImage = await fetch('http://localhost:3001/image/restore-upload', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id, productid, url })
+                body: JSON.stringify({ id, productid, url, store_name })
             })
 
         }, {
@@ -672,14 +712,16 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             const content = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { id, productid, url } = content;
-
+            const { id, productid, url, storeName } = content;
+            console.log("store name : ",storeName)
 
             const restoreFileName = await db.backupaltname.findFirst({
                 where: {
                     restoreId: `${id}`
                 }
             })
+
+            console.log(restoreFileName.alt)
 
             if (productid !== '1') {
                 const image = {
@@ -712,6 +754,8 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     },
                 })
 
+                console.log(deleteImage.status)
+
                 if (deleteImage.status === 200) {
                     const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {
                         method: 'POST',
@@ -723,6 +767,8 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     })
 
                     const data = await response.json();
+
+                    console.log(data)
 
                     await db.backupfilename.delete({
                         where: {
