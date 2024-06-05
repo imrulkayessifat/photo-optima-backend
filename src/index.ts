@@ -58,6 +58,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             // Access id and url from the data
             const { id, productid, url, storeName } = data;
+            console.log(storeName)
 
             const store = await db.store.findFirst({
                 where: {
@@ -600,6 +601,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             const existImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`)
 
             if (existImageFromCustomDB.status === 200) {
+                console.log("603",existImageFromCustomDB)
                 const updatedImage = await db.image.update({
                     where: { id: id },
                     data: { status: 'COMPRESSED' },

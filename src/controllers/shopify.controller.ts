@@ -73,69 +73,48 @@ export const shopifyCallback = async (req: Request, res: Response): Promise<void
 
     const getAccessTokenRes = await getAccessToken.json();
 
-    const productsReq = await fetch(`https://${shop}/admin/api/2024-04/products.json`, {
-        headers: {
-            'X-Shopify-Access-Token': `${getAccessTokenRes.access_token}`,
-        },
-    })
+    // const productsReq = await fetch(`https://${shop}/admin/api/2024-04/products.json`, {
+    //     headers: {
+    //         'X-Shopify-Access-Token': `${getAccessTokenRes.access_token}`,
+    //     },
+    // })
 
-    const productRes = await productsReq.json();
-
-    const storeCount = await db.store.findMany({
-        where: {
-            name: `${shop}`
-        }
-    })
-
-    if (storeCount.length === 0) {
-        await db.store.create({
-            data: {
-                name: `${shop}`
-            }
-        })
-
-        await db.product.create({
-            data:{
-                id:'1',
-                title:'uploadcare',
-                storename:`${shop}`
-            }
-        })
-    }
+    // const productRes = await productsReq.json();
 
 
 
-    productRes.products.map((product: { images: any[]; }) => {
-        product.images.map(async (image: any) => {
-            const getImage = await db.image.findFirst({
-                where: {
-                    id: `${image.id}`
-                }
-            })
-            if (!getImage) {
-                await db.image.create({
-                    data: {
-                        id: `${image.id}`,
-                        productId: `${image.product_id}`,
-                        url: image.src
-                    }
-                })
-            }
 
-        })
-    })
+    // productRes.products.map((product: { images: any[]; }) => {
+    //     product.images.map(async (image: any) => {
+    //         const getImage = await db.image.findFirst({
+    //             where: {
+    //                 id: `${image.id}`
+    //             }
+    //         })
+    //         if (!getImage) {
+    //             await db.image.create({
+    //                 data: {
+    //                     id: `${image.id}`,
+    //                     productId: `${image.product_id}`,
+    //                     url: image.src
+    //                 }
+    //             })
+    //         }
 
-    const storeData = await db.store.findFirst({
-    	where:{
-    		name: `${shop}`
-    	}
-    })
+    //     })
+    // })
 
-    const token = jwt.sign(storeData, process.env.JWT_SECRET_KEY);
+    // const storeData = await db.store.findFirst({
+    // 	where:{
+    // 		name: `${shop}`
+    // 	}
+    // })
 
+    // const token = jwt.sign(storeData, process.env.JWT_SECRET_KEY);
 
+    console.log(shop)
     if (getAccessTokenRes.scope.includes('write_products')) {
-        res.redirect(`${process.env.FRONTEND_DOMAIN}/token?shop=${shop}`);
+        res.redirect(`/accessToken?shop=${shop}`);
         // res.status(200).json({ data: token });
     } else {
         console.error("Access token doesn't have write_products scope:", getAccessTokenRes.access_token);
