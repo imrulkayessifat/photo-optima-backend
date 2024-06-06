@@ -792,7 +792,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 const base64Image3 = Buffer.from(url, 'base64');
 
 
-                fs.writeFileSync('hello2.jpg', base64Image3)
+                // fs.writeFileSync('hello2.jpg', base64Image3)
 
                 const getUploadcareImage = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
                     headers: {
