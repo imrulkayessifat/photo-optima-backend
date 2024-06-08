@@ -32,7 +32,7 @@ app.use("/webhooks/product", productRouter)
 app.use("/webhooks/file", fileUploadRouter)
 
 app.get("/", (req, res) => {
-    res.json({ message: "demo shahi" }).status(200);
+    res.json({ message: "response from backend" }).status(200);
 });
 
 
