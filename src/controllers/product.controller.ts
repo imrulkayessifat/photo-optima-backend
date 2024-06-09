@@ -168,7 +168,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         }
                     })
                     if (imageRes.status === 'NOT_COMPRESSED') {
-                        const response = fetch(`http://localhost:3001/image/compress-image`, {
+                        const response = fetch(`${process.env.MQSERVER}/image/compress-image`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -190,7 +190,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     })
 
                     if (imageRes.id) {
-                        const req = fetch('http://localhost:3001/rename/file-rename', {
+                        const req = fetch(`${process.env.MQSERVER}/rename/file-rename`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -211,7 +211,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     })
 
                     if (imageRes.id) {
-                        const req = fetch('http://localhost:3001/rename/alt-rename', {
+                        const req = fetch(`${process.env.MQSERVER}/rename/alt-rename`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',

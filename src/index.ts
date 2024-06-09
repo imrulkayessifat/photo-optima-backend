@@ -150,7 +150,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             }
 
 
-            const uploadImage = await fetch('http://localhost:3001/image/upload-image', {
+            const uploadImage = await fetch(`${process.env.MQSERVER}/image/upload-image`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -276,7 +276,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     }
                 }
 
-                const uploadImage = await fetch('http://localhost:3001/image/upload-image', {
+                const uploadImage = await fetch(`${process.env.MQSERVER}/image/upload-image`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -316,7 +316,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             })
 
             if (getStoreData.batchRestore) {
-                const uploadImage = await fetch('http://localhost:3001/image/restore-upload', {
+                const uploadImage = await fetch(`${process.env.MQSERVER}/image/restore-upload`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -356,7 +356,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             })
 
             if (image) {
-                const req = await fetch('http://localhost:3001/rename/file-rename', {
+                const req = await fetch(`${process.env.MQSERVER}/rename/file-rename`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -401,7 +401,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             })
 
             if (image) {
-                const req = await fetch('http://localhost:3001/rename/alt-rename', {
+                const req = await fetch(`${process.env.MQSERVER}/rename/alt-rename`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -598,7 +598,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             }
 
-            const existImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`)
+            const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${id}`)
 
             if (existImageFromCustomDB.status === 200) {
                 console.log("603",existImageFromCustomDB)
@@ -606,7 +606,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                     where: { id: id },
                     data: { status: 'COMPRESSED' },
                 });
-                const removeImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`, {
+                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${id}`, {
                     method: 'DELETE'
                 })
             }
@@ -654,7 +654,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 data: { status: 'COMPRESSED' },
             });
 
-            const uploadImage = await fetch('http://localhost:3001/image/upload-image', {
+            const uploadImage = await fetch(`${process.env.MQSERVER}/image/upload-image`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -685,7 +685,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
             // Access id and url from the data
             const { id, productid, url, store_name } = data;
 
-            const uploadImage = await fetch('http://localhost:3001/image/restore-upload', {
+            const uploadImage = await fetch(`${process.env.MQSERVER}/image/restore-upload`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -833,34 +833,34 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             }
 
-            const existBackupImageFromCustomDB = await fetch(`http://localhost:3001/backup/${id}`)
+            const existBackupImageFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/${id}`)
 
             if (existBackupImageFromCustomDB.status === 200) {
-                const removeImageFromCustomDB = await fetch(`http://localhost:3001/backup/${id}`, {
+                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/${id}`, {
                     method: 'DELETE'
                 })
             }
 
-            const existImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`)
+            const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${id}`)
 
             if (existImageFromCustomDB.status === 200) {
-                const removeImageFromCustomDB = await fetch(`http://localhost:3001/image/${id}`, {
+                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${id}`, {
                     method: 'DELETE'
                 })
             }
 
-            const exitBackupFileNameFromCustomDB = await fetch(`http://localhost:3001/backup/filename/${id}`)
+            const exitBackupFileNameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/filename/${id}`)
 
             if (exitBackupFileNameFromCustomDB.status === 200) {
-                const removeFilenameFromCustomDB = await fetch(`http://localhost:3001/backup/filename/${id}`, {
+                const removeFilenameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/filename/${id}`, {
                     method: 'DELETE'
                 })
             }
 
-            const exitBackupAltNameFromCustomDB = await fetch(`http://localhost:3001/backup/altname/${id}`)
+            const exitBackupAltNameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/altname/${id}`)
 
             if (exitBackupAltNameFromCustomDB.status === 200) {
-                const removeAltnameFromCustomDB = await fetch(`http://localhost:3001/backup/altname/${id}`, {
+                const removeAltnameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/altname/${id}`, {
                     method: 'DELETE'
                 })
             }
