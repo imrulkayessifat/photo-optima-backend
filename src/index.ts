@@ -437,7 +437,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             // Access id and url from the data
             const { id, productid, compressedBuffer, storeName } = content;
-            console.log(id)
+            console.log(productid)
             const base64Image = Buffer.from(compressedBuffer).toString('base64');
 
             const singleImageData = await db.image.findFirst({
