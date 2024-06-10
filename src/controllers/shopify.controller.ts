@@ -112,7 +112,7 @@ export const shopifyCallback = async (req: Request, res: Response): Promise<void
 
     // const token = jwt.sign(storeData, process.env.JWT_SECRET_KEY);
 
-    console.log(shop)
+    
     if (getAccessTokenRes.scope.includes('write_products')) {
         res.redirect(`/accessToken?shop=${shop}`);
         // res.status(200).json({ data: token });

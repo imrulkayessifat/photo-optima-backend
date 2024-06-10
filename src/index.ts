@@ -58,7 +58,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             // Access id and url from the data
             const { id, productid, url, storeName } = data;
-            console.log(storeName)
+            console.log('store name',storeName)
 
             const store = await db.store.findFirst({
                 where: {
@@ -437,7 +437,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
             // Access id and url from the data
             const { id, productid, compressedBuffer, storeName } = content;
-
+            console.log(id)
             const base64Image = Buffer.from(compressedBuffer).toString('base64');
 
             const singleImageData = await db.image.findFirst({
@@ -774,7 +774,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
 
                     const data = await response.json();
 
-                    console.log(data)
+                    
 
                     await db.backupfilename.delete({
                         where: {
