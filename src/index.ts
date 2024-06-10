@@ -446,6 +446,8 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 }
             })
 
+            console.log(singleImageData)
+
             const singleProductData = await db.product.findFirst({
                 where: {
                     id: productid
