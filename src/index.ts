@@ -36,7 +36,7 @@ app.get("/", (req, res) => {
 });
 
 
-amqp.connect('amqp://localhost', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
+amqp.connect('amqps://localhost', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
     if (error0) {
         throw error0;
     }
@@ -547,6 +547,8 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 })
 
                 const originalFilePath = await getUploadcareImageUrl.json();
+
+                console.log(originalFilePath)
 
                 const response = await axios.get(originalFilePath.original_file_url, { responseType: 'arraybuffer' });
 
