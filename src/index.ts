@@ -36,7 +36,7 @@ app.get("/", (req, res) => {
 });
 
 
-amqp.connect('amqp://localhost', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
+amqp.connect('amqp://localhost?frameMax=0x100000', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
     if (error0) {
         throw error0;
     }
