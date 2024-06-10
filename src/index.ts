@@ -155,7 +155,7 @@ amqp.connect('amqp://localhost', function (error0: any, connection: { createChan
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id, productid, compressedBuffer })
+                body: JSON.stringify({ id, productid, compressedBuffer,storeName })
             })
 
         }, {
