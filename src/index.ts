@@ -13,10 +13,10 @@ import { AccessTokenType } from 'types/type';
 import shopifyRouter from './routes/shopify.router';
 import productRouter from './routes/product.router';
 import fileUploadRouter from './routes/file-upload.router';
+import complianceRouter from './routes/compliance.router';
 
 const amqp = require('amqplib/callback_api');
 const fs = require('fs');
-
 
 const app = express();
 const server = http.createServer(app)
@@ -30,6 +30,7 @@ app.options('*', cors());
 app.use("/shopify", shopifyRouter)
 app.use("/webhooks/product", productRouter)
 app.use("/webhooks/file", fileUploadRouter)
+app.use("/webhooks/compliance",complianceRouter)
 
 app.get("/", (req, res) => {
     res.json({ message: "response from backend" }).status(200);
