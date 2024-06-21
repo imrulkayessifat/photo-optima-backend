@@ -828,7 +828,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                             fileName: `${imageData.name}`,
                             metadata: {
                                 subsystem: 'js-client',
-                                pet: `NOTCOMPRESSED`
+                                pet: `RESTORED-${uid}`
                             }
                         }
                     )
