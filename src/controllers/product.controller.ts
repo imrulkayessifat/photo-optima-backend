@@ -107,37 +107,29 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                 const newUrl = new URL(url);
                 const name = newUrl.pathname.split('/').pop() || null;
 
-                console.log("altname : ",alt)
+                console.log("existing iamge", existingImage)
 
-                // if (existingImage) {
-                //     let data = {
-                //         id: existingImage.id,
-                //         url: existingImage.url,
-                //         productId: existingImage.productId,
-                //         status: existingImage.status,
-                //         name: existingImage.name,
-                //         fileRename: existingImage.fileRename,
-                //         altRename: existingImage.altRename,
-                //         alt: existingImage.alt
-                //     };
-                //     if (alt === null) {
-                //         data.status = 'NOT_COMPRESSED'
-                //     }
-                //     else if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
-                //         data.status = 'COMPRESSED';
-                //     }
+                let responses = []
+
+
+                // if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
                 //     const response = await db.image.update({
-                //         where: { uid: existingImage.uid },
-                //         data,
-                //     });
+                //         where: {
+                //             uid: parseInt(alt.split('.')[0].split('-').pop().split('C').join(''))
+                //         },
+                //         data: {
+                //             id: imageIdStr,
+                //             url: url,
+                //             name: alt || name,
+                //             alt: alt || name,
+                //             fileRename: false,
+                //             altRename: false,
+                //             productId,
+                //             status: 'COMPRESSED'
+                //         }
+                //     })
                 //     responses.push(response);
                 // } else {
-                //     let status:Status='NOT_COMPRESSED';
-                //     if(alt === null) {
-                //         status = 'NOT_COMPRESSED'
-                //     } else if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
-                //         status = 'COMPRESSED';
-                //     }
                 //     const response = await db.image.create({
                 //         data: {
                 //             id: imageIdStr,
@@ -147,13 +139,59 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                 //             fileRename: false,
                 //             altRename: false,
                 //             productId,
-                //             status
+                //             status: 'NOT_COMPRESSED'
                 //         },
                 //     });
-
-
                 //     responses.push(response);
                 // }
+
+
+                if (existingImage) {
+                    let data = {
+                        id: existingImage.id,
+                        url: existingImage.url,
+                        productId: existingImage.productId,
+                        status: existingImage.status,
+                        name: existingImage.name,
+                        fileRename: existingImage.fileRename,
+                        altRename: existingImage.altRename,
+                        alt: existingImage.alt
+                    };
+                    if (alt === null) {
+                        data.status = 'NOT_COMPRESSED'
+                    }
+                    else if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
+                        data.status = 'COMPRESSED';
+                    }
+                    const response = await db.image.update({
+                        where: { uid: existingImage.uid },
+                        data,
+                    });
+                    responses.push(response);
+                } else {
+                    let status: Status = 'NOT_COMPRESSED';
+                    if (alt === null) {
+                        status = 'NOT_COMPRESSED'
+                    } else if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
+                        status = 'COMPRESSED';
+                    }
+
+                    const response = await db.image.create({
+                        data: {
+                            id: imageIdStr,
+                            url,
+                            name: alt || name,
+                            alt: alt || name,
+                            fileRename: false,
+                            altRename: false,
+                            productId,
+                            status
+                        },
+                    });
+
+
+                    responses.push(response);
+                }
 
                 const storeRes = await db.store.findFirst({
                     where: {
