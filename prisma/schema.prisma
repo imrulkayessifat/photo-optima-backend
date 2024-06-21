@@ -138,7 +138,8 @@ model Product {
 }
 
 model Image {
-  id         String   @id
+  uid        Int      @id @default(autoincrement())
+  id         String
   url        String
   name       String?
   alt        String?

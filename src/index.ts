@@ -437,13 +437,13 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             const content = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { id, productid, compressedBuffer, storeName } = content;
+            const { uid, productid, compressedBuffer, storeName } = content;
             console.log(productid)
             const base64Image = Buffer.from(compressedBuffer).toString('base64');
 
             const singleImageData = await db.image.findFirst({
                 where: {
-                    id: id
+                    uid
                 }
             })
 
@@ -457,7 +457,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             if (productid !== '1') {
                 const image = {
-                    alt: `${singleImageData.name.split('.').slice(0, -1).join('.')}-${id}C.${singleImageData.name.split('.').pop()}`,
+                    alt: `${singleImageData.name.split('.').slice(0, -1).join('.')}-${uid}C.${singleImageData.name.split('.').pop()}`,
                     product_id: productid,
                     attachment: base64Image,
                 };
@@ -476,7 +476,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                 const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
-                const getImageData = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
+                const getImageData = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${singleImageData.id}.json`, {
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Shopify-Access-Token': `${accessToken.access_token}`
@@ -490,7 +490,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 const base64ImageForBackup = Buffer.from(buffer).toString('base64');
 
 
-                const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
+                const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${singleImageData.id}.json`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -537,13 +537,13 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             } else {
                 const base64Image2 = Buffer.from(compressedBuffer);
 
-                const getUploadcareImageStatus = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
+                const getUploadcareImageStatus = await fetch(`https://api.uploadcare.com/files/${singleImageData.id}/storage/`, {
                     headers: {
                         'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
                     }
                 })
 
-                const getUploadcareImageUrl = await fetch(`https://api.uploadcare.com/files/${id}/`, {
+                const getUploadcareImageUrl = await fetch(`https://api.uploadcare.com/files/${singleImageData.id}/`, {
                     headers: {
                         'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
                     }
@@ -560,7 +560,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 // fs.writeFileSync('hello1.jpg', buffer)
 
                 if (getUploadcareImageStatus.status === 200) {
-                    const deleteFileReq = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
+                    const deleteFileReq = await fetch(`https://api.uploadcare.com/files/${singleImageData.id}/storage/`, {
                         method: 'DELETE',
                         headers: {
                             'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
@@ -575,7 +575,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                             fileName: `${singleImageData.name}`,
                             metadata: {
                                 subsystem: 'js-client',
-                                pet: `COMPRESSED_${id}`
+                                pet: `COMPRESSED_${uid}`
                             }
                         }
                     )
@@ -603,15 +603,15 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             }
 
-            const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${id}`)
+            const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${uid}`)
 
             if (existImageFromCustomDB.status === 200) {
                 console.log("603",existImageFromCustomDB)
                 const updatedImage = await db.image.update({
-                    where: { id: id },
+                    where: { uid: uid },
                     data: { status: 'COMPRESSED' },
                 });
-                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${id}`, {
+                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${uid}`, {
                     method: 'DELETE'
                 })
             }
@@ -646,7 +646,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
         channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
 
             const data = JSON.parse(msg.content.toString());
-            const { id, productid, url } = data;
+            const { uid, productid, url } = data;
 
             const response = await axios.get(url, { responseType: 'arraybuffer' });
             const buffer = Buffer.from(response.data, 'binary');
@@ -655,7 +655,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             // Update the status in the database
             const updatedImage = await db.image.update({
-                where: { id: id },
+                where: { uid },
                 data: { status: 'COMPRESSED' },
             });
 
@@ -664,7 +664,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id, productid, compressedBuffer })
+                body: JSON.stringify({ uid, productid, compressedBuffer })
             })
 
         }, {

@@ -97,11 +97,11 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
             let responses = [];
 
             for (const image of images) {
-                const { id: imageId, src: url, width, height, alt } = image;
+                const { uid: imageId, src: url, width, height, alt } = image;
                 const imageIdStr = imageId.toString();
 
                 const existingImage = await db.image.findUnique({
-                    where: { id: imageIdStr },
+                    where: { uid: imageId },
                 });
 
                 const newUrl = new URL(url);
@@ -110,6 +110,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
 
                 if (existingImage) {
                     let data: Image = {
+                        uid:imageId,
                         id: imageIdStr,
                         url,
                         productId: existingImage.productId,
@@ -126,12 +127,13 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         data.status = 'COMPRESSED';
                     }
                     const response = await db.image.update({
-                        where: { id: imageIdStr },
+                        where: { uid: imageId },
                         data,
                     });
                     responses.push(response);
                 } else {
                     let data: Image = {
+                        uid:imageId,
                         id: imageIdStr,
                         url,
                         name: alt || name,
