@@ -131,6 +131,23 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         }
                     })
                     responses.push(response);
+                } else if(alt !== null && alt.split('.')[0].split('-').pop().slice(-1) === 'N') {
+                    const response = await db.image.update({
+                        where: {
+                            uid: parseInt(alt.split('.')[0].split('-').pop().split('N').join(''))
+                        },
+                        data: {
+                            id: imageIdStr,
+                            url: url,
+                            name: alt || name,
+                            alt: alt || name,
+                            fileRename: false,
+                            altRename: false,
+                            productId,
+                            status: 'NOT_COMPRESSED'
+                        }
+                    })
+                    responses.push(response);
                 } else {
                     const response = await db.image.create({
                         data: {

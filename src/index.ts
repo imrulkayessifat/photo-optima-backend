@@ -30,7 +30,7 @@ app.options('*', cors());
 app.use("/shopify", shopifyRouter)
 app.use("/webhooks/product", productRouter)
 app.use("/webhooks/file", fileUploadRouter)
-app.use("/webhooks/compliance",complianceRouter)
+app.use("/webhooks/compliance", complianceRouter)
 
 app.get("/", (req, res) => {
     res.json({ message: "response from backend" }).status(200);
@@ -59,7 +59,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             // Access id and url from the data
             const { uid, productid, url, storeName } = data;
-            console.log('store name',storeName)
+            console.log('store name', storeName)
 
             const store = await db.store.findFirst({
                 where: {
@@ -156,7 +156,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ uid, productid, compressedBuffer,storeName })
+                body: JSON.stringify({ uid, productid, compressedBuffer, storeName })
             })
 
         }, {
@@ -606,7 +606,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${uid}`)
 
             if (existImageFromCustomDB.status === 200) {
-                console.log("603",existImageFromCustomDB)
+                console.log("603", existImageFromCustomDB)
                 const updatedImage = await db.image.update({
                     where: { uid: uid },
                     data: { status: 'COMPRESSED' },
@@ -688,14 +688,14 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             const data = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { id, productid, url, store_name } = data;
+            const { uid, productid, url, store_name } = data;
 
             const uploadImage = await fetch(`${process.env.MQSERVER}/image/restore-upload`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id, productid, url, store_name })
+                body: JSON.stringify({ uid, productid, url, store_name })
             })
 
         }, {
@@ -719,20 +719,21 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             const content = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { id, productid, url, storeName } = content;
-            console.log("store name : ",storeName)
+            const { uid, productid, url, storeName } = content;
+            console.log("store name : ", storeName)
 
-            const restoreFileName = await db.backupaltname.findFirst({
+            const imageData = await db.image.findFirst({
                 where: {
-                    restoreId: `${id}`
+                    uid: parseInt(uid)
                 }
             })
 
-            console.log(restoreFileName.alt)
+            const alt = imageData.alt.split('.')[0].split('-')
+            alt.pop()
 
             if (productid !== '1') {
                 const image = {
-                    alt: `${restoreFileName.alt}`,
+                    alt: `${alt.join('-')}-${uid}N.${imageData.alt.split('.').pop()}`,
                     product_id: productid,
                     attachment: url,
                 };
@@ -752,8 +753,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
 
-
-                const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${id}.json`, {
+                const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${imageData.id}.json`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -775,19 +775,19 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                     const data = await response.json();
 
-                    
 
-                    await db.backupfilename.delete({
-                        where: {
-                            restoreId: `${id}`
-                        }
-                    })
 
-                    await db.backupaltname.delete({
-                        where: {
-                            restoreId: `${id}`
-                        }
-                    })
+                    // await db.backupfilename.delete({
+                    //     where: {
+                    //         restoreId: `${id}`
+                    //     }
+                    // })
+
+                    // await db.backupaltname.delete({
+                    //     where: {
+                    //         restoreId: `${id}`
+                    //     }
+                    // })
 
                 }
 
@@ -799,25 +799,25 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                 // fs.writeFileSync('hello2.jpg', base64Image3)
 
-                const getUploadcareImage = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
+                const getUploadcareImage = await fetch(`https://api.uploadcare.com/files/${imageData.id}/storage/`, {
                     headers: {
                         'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
                     }
                 })
 
                 if (getUploadcareImage.status === 200) {
-                    const deleteFileReq = await fetch(`https://api.uploadcare.com/files/${id}/storage/`, {
+                    const deleteFileReq = await fetch(`https://api.uploadcare.com/files/${imageData.id}/storage/`, {
                         method: 'DELETE',
                         headers: {
                             'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`
                         }
                     })
 
-                    const restoreImageName = await db.backupfilename.findFirst({
-                        where: {
-                            restoreId: `${id}`
-                        }
-                    })
+                    // const restoreImageName = await db.backupfilename.findFirst({
+                    //     where: {
+                    //         restoreId: `${id}`
+                    //     }
+                    // })
 
 
                     const data = await uploadFile(
@@ -825,7 +825,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         {
                             publicKey: 'c0bc9dbd97f5de75c062',
                             store: 'auto',
-                            fileName: `${restoreImageName.name}`,
+                            fileName: `${imageData.name}`,
                             metadata: {
                                 subsystem: 'js-client',
                                 pet: `NOTCOMPRESSED`
@@ -838,37 +838,37 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             }
 
-            const existBackupImageFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/${id}`)
+            const existBackupImageFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/${imageData.id}`)
 
             if (existBackupImageFromCustomDB.status === 200) {
-                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/${id}`, {
+                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/${imageData.id}`, {
                     method: 'DELETE'
                 })
             }
 
-            const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${id}`)
+            const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${imageData.id}`)
 
             if (existImageFromCustomDB.status === 200) {
-                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${id}`, {
+                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${imageData.id}`, {
                     method: 'DELETE'
                 })
             }
 
-            const exitBackupFileNameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/filename/${id}`)
+            // const exitBackupFileNameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/filename/${id}`)
 
-            if (exitBackupFileNameFromCustomDB.status === 200) {
-                const removeFilenameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/filename/${id}`, {
-                    method: 'DELETE'
-                })
-            }
+            // if (exitBackupFileNameFromCustomDB.status === 200) {
+            //     const removeFilenameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/filename/${id}`, {
+            //         method: 'DELETE'
+            //     })
+            // }
 
-            const exitBackupAltNameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/altname/${id}`)
+            // const exitBackupAltNameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/altname/${id}`)
 
-            if (exitBackupAltNameFromCustomDB.status === 200) {
-                const removeAltnameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/altname/${id}`, {
-                    method: 'DELETE'
-                })
-            }
+            // if (exitBackupAltNameFromCustomDB.status === 200) {
+            //     const removeAltnameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/altname/${id}`, {
+            //         method: 'DELETE'
+            //     })
+            // }
 
 
         }, {
