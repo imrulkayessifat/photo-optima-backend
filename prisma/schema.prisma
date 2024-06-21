@@ -139,7 +139,7 @@ model Product {
 
 model Image {
   uid        Int      @id @default(autoincrement())
-  id         String
+  id         String   
   url        String
   name       String?
   alt        String?

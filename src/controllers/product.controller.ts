@@ -1,4 +1,4 @@
-import { Image } from '@prisma/client';
+import { Status } from '@prisma/client';
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 
@@ -97,11 +97,11 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
             let responses = [];
 
             for (const image of images) {
-                const { uid: imageId, src: url, width, height, alt } = image;
+                const { id: imageId, src: url, width, height, alt } = image;
                 const imageIdStr = imageId.toString();
 
-                const existingImage = await db.image.findUnique({
-                    where: { uid: imageId },
+                const existingImage = await db.image.findFirst({
+                    where: { id: imageId },
                 });
 
                 const newUrl = new URL(url);
@@ -109,10 +109,9 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
 
 
                 if (existingImage) {
-                    let data: Image = {
-                        uid:imageId,
-                        id: imageIdStr,
-                        url,
+                    let data = {
+                        id: existingImage.id,
+                        url: existingImage.url,
                         productId: existingImage.productId,
                         status: existingImage.status,
                         name: existingImage.name,
@@ -127,30 +126,28 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         data.status = 'COMPRESSED';
                     }
                     const response = await db.image.update({
-                        where: { uid: imageId },
+                        where: { uid: existingImage.uid },
                         data,
                     });
                     responses.push(response);
                 } else {
-                    let data: Image = {
-                        uid:imageId,
-                        id: imageIdStr,
-                        url,
-                        name: alt || name,
-                        alt: alt || name,
-                        fileRename: false,
-                        altRename: false,
-                        productId,
-                        status: 'NOT_COMPRESSED'
-                    };
-                    if (alt === null) {
-                        data.status = 'NOT_COMPRESSED'
-                    }
-                    else if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
-                        data.status = 'COMPRESSED';
+                    let status:Status='NOT_COMPRESSED';
+                    if(alt === null) {
+                        status = 'NOT_COMPRESSED'
+                    } else if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
+                        status = 'COMPRESSED';
                     }
                     const response = await db.image.create({
-                        data,
+                        data: {
+                            id: imageIdStr,
+                            url,
+                            name: alt || name,
+                            alt: alt || name,
+                            fileRename: false,
+                            altRename: false,
+                            productId,
+                            status
+                        },
                     });
 
 
@@ -176,7 +173,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                                 'Content-Type': 'application/json',
                             },
                             body: JSON.stringify({
-                                id: imageRes.id,
+                                uid: imageRes.uid,
                                 productid: imageRes.productId,
                                 url: imageRes.url,
                                 storeName: shopDomain
