@@ -109,6 +109,8 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
 
                 // console.log("existing iamge", existingImage)
 
+                console.log("alt",alt)
+
                 let responses = []
 
 
