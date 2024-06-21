@@ -101,7 +101,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                 const imageIdStr = imageId.toString();
 
                 const existingImage = await db.image.findFirst({
-                    where: { id: imageIdStr },
+                    where: { uid: parseInt(alt.split('.')[0].split('-').pop().split('C').join(''))},
                 });
 
                 const newUrl = new URL(url);
