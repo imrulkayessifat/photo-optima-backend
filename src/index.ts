@@ -838,21 +838,21 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             }
 
-            const existBackupImageFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/${imageData.id}`)
+            const existBackupImageFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/${uid}`)
 
             if (existBackupImageFromCustomDB.status === 200) {
-                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/${imageData.id}`, {
+                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/${uid}`, {
                     method: 'DELETE'
                 })
             }
 
-            const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${imageData.id}`)
+            // const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${imageData.id}`)
 
-            if (existImageFromCustomDB.status === 200) {
-                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${imageData.id}`, {
-                    method: 'DELETE'
-                })
-            }
+            // if (existImageFromCustomDB.status === 200) {
+            //     const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${imageData.id}`, {
+            //         method: 'DELETE'
+            //     })
+            // }
 
             // const exitBackupFileNameFromCustomDB = await fetch(`${process.env.MQSERVER}/backup/filename/${id}`)
 
