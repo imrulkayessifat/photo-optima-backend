@@ -40,7 +40,7 @@ export const fileUpload = async (req: Request, res: Response): Promise<void> => 
         })
     }
     else if (state === 'COMPRESSED') {
-        const uid = imageData.data.metadata.pet.split('_')[1]
+        const uid = imageData.data.metadata.pet.split('-')[1]
 
         await db.image.update({
             where: {
