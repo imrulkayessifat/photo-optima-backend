@@ -512,24 +512,24 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                     await db.backupimage.create({
                         data: {
-                            restoreId: `${data.image.id}`,
+                            restoreId: `${uid}`,
                             url: base64ImageForBackup
                         }
                     })
 
-                    await db.backupfilename.create({
-                        data: {
-                            restoreId: `${data.image.id}`,
-                            name: `${singleImageData.name}`
-                        }
-                    })
+                    // await db.backupfilename.create({
+                    //     data: {
+                    //         restoreId: `${data.image.id}`,
+                    //         name: `${singleImageData.name}`
+                    //     }
+                    // })
 
-                    await db.backupaltname.create({
-                        data: {
-                            restoreId: `${data.image.id}`,
-                            alt: `${singleImageData.name}`
-                        }
-                    })
+                    // await db.backupaltname.create({
+                    //     data: {
+                    //         restoreId: `${data.image.id}`,
+                    //         alt: `${singleImageData.name}`
+                    //     }
+                    // })
 
                 }
 
