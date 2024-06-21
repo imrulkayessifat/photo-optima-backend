@@ -58,7 +58,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             const data = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { id, productid, url, storeName } = data;
+            const { uid, productid, url, storeName } = data;
             console.log('store name',storeName)
 
             const store = await db.store.findFirst({
@@ -156,7 +156,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id, productid, compressedBuffer,storeName })
+                body: JSON.stringify({ uid, productid, compressedBuffer,storeName })
             })
 
         }, {
@@ -581,24 +581,24 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     )
                     await db.backupimage.create({
                         data: {
-                            restoreId: `${data.uuid}`,
+                            restoreId: `${uid}`,
                             url: bufferString
                         }
                     })
 
-                    await db.backupfilename.create({
-                        data: {
-                            restoreId: `${data.uuid}`,
-                            name: `${singleImageData.name}`
-                        }
-                    })
+                    // await db.backupfilename.create({
+                    //     data: {
+                    //         restoreId: `${data.uuid}`,
+                    //         name: `${singleImageData.name}`
+                    //     }
+                    // })
 
-                    await db.backupaltname.create({
-                        data: {
-                            restoreId: `${data.uuid}`,
-                            alt: `${singleImageData.name}`
-                        }
-                    })
+                    // await db.backupaltname.create({
+                    //     data: {
+                    //         restoreId: `${data.uuid}`,
+                    //         alt: `${singleImageData.name}`
+                    //     }
+                    // })
                 }
 
             }
