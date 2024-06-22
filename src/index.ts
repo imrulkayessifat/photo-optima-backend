@@ -181,7 +181,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             const data = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { id, productId: productid, url, store_name: storeName } = data;
+            const { uid, productId: productid, url, store_name: storeName } = data;
 
             const getStoreData = await db.store.findFirst({
                 where: {
@@ -282,7 +282,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ id, productid, compressedBuffer, storeName })
+                    body: JSON.stringify({ uid, productid, compressedBuffer, storeName })
                 })
             }
 
@@ -603,18 +603,18 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             }
 
-            const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${uid}`)
+            // const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${uid}`)
 
-            if (existImageFromCustomDB.status === 200) {
-                console.log("603", existImageFromCustomDB)
-                const updatedImage = await db.image.update({
-                    where: { uid: uid },
-                    data: { status: 'COMPRESSED' },
-                });
-                const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${uid}`, {
-                    method: 'DELETE'
-                })
-            }
+            // if (existImageFromCustomDB.status === 200) {
+            //     console.log("603", existImageFromCustomDB)
+            //     const updatedImage = await db.image.update({
+            //         where: { uid: uid },
+            //         data: { status: 'COMPRESSED' },
+            //     });
+            //     const removeImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${uid}`, {
+            //         method: 'DELETE'
+            //     })
+            // }
 
             // await db.store.update({
             //     where: {
