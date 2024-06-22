@@ -346,11 +346,11 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             const data = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { id, store_name } = data;
+            const { uid, store_name } = data;
 
             const image = await db.image.findFirst({
                 where: {
-                    id: id
+                    uid: uid
                 }
             })
 
@@ -362,7 +362,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     },
                     body: JSON.stringify({
                         storeName: store_name,
-                        id: `${id}`,
+                        uid: `${uid}`,
                     })
                 })
 
