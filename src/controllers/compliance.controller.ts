@@ -18,7 +18,6 @@ export const customerRequest = async (req: any, res: any) => {
 
     if (hmac === hash) {
         try {
-            console.log(JSON.parse(body.toString()));
             const data = db.store.findFirst({
                 where: {
                     name: shopDomain
@@ -47,7 +46,6 @@ export const customerErasure = async (req: any, res: any) => {
 
         if (hmac === hash) {
             try {
-                console.log(JSON.parse(body.toString()))
                 const data = db.store.delete({
                     where: {
                         name: shopDomain
@@ -76,7 +74,6 @@ export const shopErasure = async (req: any, res: any) => {
 
         if (hmac === hash) {
             try {
-                console.log(JSON.parse(body.toString()))
                 const data = db.store.delete({
                     where: {
                         name: shopDomain

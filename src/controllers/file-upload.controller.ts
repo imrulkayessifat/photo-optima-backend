@@ -21,9 +21,6 @@ export const fileUpload = async (req: Request, res: Response): Promise<void> => 
 
     const state = imageData.data.metadata.pet.split('-')[0]
 
-    console.log("image state : ",state)
-
-
     if (state === 'RESTORED') {
         await db.image.update({
             where: {

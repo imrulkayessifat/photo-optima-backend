@@ -57,9 +57,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             const data = JSON.parse(msg.content.toString());
 
-            // Access id and url from the data
             const { uid, productid, url, storeName } = data;
-            console.log('store name', storeName)
 
             const store = await db.store.findFirst({
                 where: {
@@ -436,9 +434,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             const content = JSON.parse(msg.content.toString());
 
-            // Access id and url from the data
             const { uid, productid, compressedBuffer, storeName } = content;
-            console.log(productid)
             const base64Image = Buffer.from(compressedBuffer).toString('base64');
 
             const singleImageData = await db.image.findFirst({
@@ -446,8 +442,6 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     uid
                 }
             })
-
-            console.log(singleImageData)
 
             const singleProductData = await db.product.findFirst({
                 where: {
@@ -551,8 +545,6 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                 const originalFilePath = await getUploadcareImageUrl.json();
 
-                console.log(originalFilePath)
-
                 const response = await axios.get(originalFilePath.original_file_url, { responseType: 'arraybuffer' });
 
                 const buffer = Buffer.from(response.data, 'binary');
@@ -606,7 +598,6 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             // const existImageFromCustomDB = await fetch(`${process.env.MQSERVER}/image/${uid}`)
 
             // if (existImageFromCustomDB.status === 200) {
-            //     console.log("603", existImageFromCustomDB)
             //     const updatedImage = await db.image.update({
             //         where: { uid: uid },
             //         data: { status: 'COMPRESSED' },
@@ -718,9 +709,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             const content = JSON.parse(msg.content.toString());
 
-            // Access id and url from the data
             const { uid, productid, url, storeName } = content;
-            console.log("store name : ", storeName)
 
             const imageData = await db.image.findFirst({
                 where: {
@@ -760,8 +749,6 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         'X-Shopify-Access-Token': `${accessToken.access_token}`
                     },
                 })
-
-                console.log(deleteImage.status)
 
                 if (deleteImage.status === 200) {
                     const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {

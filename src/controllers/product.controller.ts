@@ -107,10 +107,6 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                 const newUrl = new URL(url);
                 const name = newUrl.pathname.split('/').pop() || null;
 
-                // console.log("existing iamge", existingImage)
-
-                console.log("alt",alt)
-
                 let responses = []
 
 
