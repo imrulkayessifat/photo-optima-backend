@@ -4,7 +4,7 @@ import {
     deleteFile,
     UploadcareSimpleAuthSchema,
 } from '@uploadcare/rest-client';
-
+import { io } from "../index";
 
 const getRawBody = require('raw-body')
 
@@ -65,6 +65,10 @@ export const fileUpload = async (req: Request, res: Response): Promise<void> => 
             }
         })
     }
+
+    io.emit('image_model',()=>{
+        console.log('an event occured in manual upload');
+    });
     res.status(201).json({ data: 'image created!' });
 }
 

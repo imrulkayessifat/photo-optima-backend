@@ -1,6 +1,7 @@
 import { Status } from '@prisma/client';
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import { io } from '../index';
 
 const crypto = require('crypto')
 
@@ -159,6 +160,10 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     });
                     responses.push(response);
                 }
+
+                io.emit('image_model',()=>{
+                    console.log('an event occured in shopify product image upload');
+                });
 
 
                 // if (existingImage) {

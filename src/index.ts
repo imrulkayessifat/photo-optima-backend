@@ -8,6 +8,8 @@ import bodyParser from 'body-parser'
 import { uploadFile } from '@uploadcare/upload-client'
 
 import { PrismaClient } from "@prisma/client";
+import { Server } from 'socket.io';
+import { Socket } from 'socket.io';
 
 import { AccessTokenType } from 'types/type';
 import shopifyRouter from './routes/shopify.router';
@@ -20,6 +22,7 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app)
+export const io = new Server(server)
 const port = process.env.PORT || 8080;
 const db = new PrismaClient();
 
@@ -36,6 +39,12 @@ app.get("/", (req, res) => {
     res.json({ message: "response from backend" }).status(200);
 });
 
+io.on('connection', (socket) => {
+    console.log('new client connected from backend server')
+    socket.on('disconnect', () => {
+        console.log('client disconnected from backend server')
+    })
+})
 
 amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
     if (error0) {

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon",
-    "start":"nodemon --exec ts-node ./src/index.ts",
+    "start": "nodemon --exec ts-node ./src/index.ts",
     "migrate": "prisma migrate dev"
   },
   "keywords": [],
@@ -33,6 +33,7 @@
     "nonce": "^1.0.4",
     "raw-body": "^2.5.2",
     "request-promise": "^4.2.6",
-    "sharp": "^0.33.3"
+    "sharp": "^0.33.3",
+    "socket.io": "^4.7.5"
   }
 }
