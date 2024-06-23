@@ -22,9 +22,9 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app)
-export const io = new Server(server,{
-    cors:{
-        origin:'*'
+export const io = new Server(server, {
+    cors: {
+        origin: '*'
     }
 })
 const port = process.env.PORT || 8080;
@@ -391,7 +391,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             noAck: true
         });
     });
-    
+
     // auto_alt_rename
     connection.createChannel(function (error1, channel) {
         if (error1) {
@@ -469,7 +469,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 }
             })
 
-            const imageName = singleImageData.name.replace(`/-${uid}C`,'').replace(`/-${uid}N`,'');
+            const imageName = singleImageData.name.replace(`/-${uid}C`, '').replace(`/-${uid}N`, '');
 
             if (productid !== '1') {
                 const image = {
@@ -746,8 +746,10 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             alt.pop()
 
             const altName = alt.join('-')
-            const imageName = altName.replace(`/-${uid}C`,'').replace(`/-${uid}N`,'');
-            
+
+            console.log("alt name ", altName)
+            const imageName = altName.replace(`/-${uid}C`, '').replace(`/-${uid}N`, '');
+            console.log("image name ", imageName)
             if (productid !== '1') {
                 const image = {
                     alt: `${imageName}-${uid}N.${imageData.alt.split('.').pop()}`,
