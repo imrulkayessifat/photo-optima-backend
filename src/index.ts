@@ -469,7 +469,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 }
             })
 
-            const imageName = singleImageData.name.replace(`/-${uid}N`,'');
+            const imageName = singleImageData.name.replace(`/-${uid}C`,'').replace(`/-${uid}N`,'');
 
             if (productid !== '1') {
                 const image = {
@@ -746,7 +746,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             alt.pop()
 
             const altName = alt.join('-')
-            const imageName = altName.replace(`/-${uid}C`,'');
+            const imageName = altName.replace(`/-${uid}C`,'').replace(`/-${uid}N`,'');
             
             if (productid !== '1') {
                 const image = {
