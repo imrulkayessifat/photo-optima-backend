@@ -27,7 +27,7 @@ const port = process.env.PORT || 8080;
 const db = new PrismaClient();
 
 app.use(cors());
-app.options('*', cors());
+app.options("http:/localhost:3000", cors());
 // app.use(bodyParser.json());
 
 app.use("/shopify", shopifyRouter)
