@@ -468,8 +468,10 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     id: productid
                 }
             })
-
+            console.log("image name 0", singleImageData.name)
             const imageName = singleImageData.name.replace(`/-${uid}C`, '').replace(`/-${uid}N`, '');
+
+            console.log("image name 1", imageName)
 
             if (productid !== '1') {
                 const image = {
