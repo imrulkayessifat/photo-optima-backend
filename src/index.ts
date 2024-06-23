@@ -54,6 +54,8 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
     if (error0) {
         throw error0;
     }
+
+    // shopify_to_compressor
     connection.createChannel(function (error1, channel) {
         if (error1) {
             throw error1;
@@ -175,6 +177,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
         });
     });
 
+    // auto_compression
     connection.createChannel(function (error1, channel) {
         if (error1) {
             throw error1;
@@ -302,6 +305,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
         });
     });
 
+    // auto_restore
     connection.createChannel(function (error1, channel) {
         if (error1) {
             throw error1;
@@ -342,6 +346,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
         });
     });
 
+    // auto_file_rename
     connection.createChannel(function (error1, channel) {
         if (error1) {
             throw error1;
@@ -386,7 +391,8 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             noAck: true
         });
     });
-
+    
+    // auto_alt_rename
     connection.createChannel(function (error1, channel) {
         if (error1) {
             throw error1;
@@ -432,6 +438,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
         });
     });
 
+    // compressor_to_uploader
     connection.createChannel(function (error1, channel) {
         if (error1) {
             throw error1;
@@ -462,9 +469,11 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 }
             })
 
+            const imageName = singleImageData.name.replace(`/-${uid}N`,'');
+
             if (productid !== '1') {
                 const image = {
-                    alt: `${singleImageData.name.split('.').slice(0, -1).join('.')}-${uid}C.${singleImageData.name.split('.').pop()}`,
+                    alt: `${imageName.split('.').slice(0, -1).join('.')}-${uid}C.${singleImageData.name.split('.').pop()}`,
                     product_id: productid,
                     attachment: base64Image,
                 };
@@ -635,6 +644,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
         });
     });
 
+    // periodic_update
     connection.createChannel(function (error1, channel) {
         if (error1) {
             throw error1;
@@ -676,6 +686,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
         });
     });
 
+    // restore_image
     connection.createChannel(function (error1, channel) {
         if (error1) {
             throw error1;
@@ -707,6 +718,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
         });
     });
 
+    // restore_to_uploader
     connection.createChannel(function (error1, channel) {
         if (error1) {
             throw error1;
@@ -733,9 +745,12 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             const alt = imageData.alt.split('.')[0].split('-')
             alt.pop()
 
+            const altName = alt.join('-')
+            const imageName = altName.replace(`/-${uid}C`,'');
+            
             if (productid !== '1') {
                 const image = {
-                    alt: `${alt.join('-')}-${uid}N.${imageData.alt.split('.').pop()}`,
+                    alt: `${imageName}-${uid}N.${imageData.alt.split('.').pop()}`,
                     product_id: productid,
                     attachment: url,
                 };
