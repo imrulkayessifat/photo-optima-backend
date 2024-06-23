@@ -22,12 +22,16 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app)
-export const io = new Server(server)
+export const io = new Server(server,{
+    cors:{
+        origin:'*'
+    }
+})
 const port = process.env.PORT || 8080;
 const db = new PrismaClient();
 
 app.use(cors());
-app.options("http:/localhost:3000", cors());
+app.options("*", cors());
 // app.use(bodyParser.json());
 
 app.use("/shopify", shopifyRouter)
