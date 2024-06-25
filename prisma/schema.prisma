@@ -77,6 +77,19 @@ model AssociatedUser {
   emailVerified      Boolean
 }
 
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+}
+
+model SubscriptionPlan {
+  id        Int    @id @default(autoincrement())
+  name      String
+  bandwidth Int
+  price     Float
+}
+
 model Store {
   name            String        @id
   plan            Plan          @default(FREE)
@@ -139,7 +152,7 @@ model Product {
 
 model Image {
   uid        Int      @id @default(autoincrement())
-  id         String   
+  id         String
   url        String
   name       String?
   alt        String?
