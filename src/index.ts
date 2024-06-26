@@ -151,9 +151,9 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                 const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
-                const subscriptionPlan=await db.subscriptionPlan.findFirst({
-                    where:{
-                        name:store.plan
+                const subscriptionPlan = await db.subscriptionPlan.findFirst({
+                    where: {
+                        name: store.plan
                     }
                 });
 
@@ -210,6 +210,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             })
 
             if (getStoreData.autoCompression || getStoreData.batchCompress) {
+                console.log("url", url)
                 const response = await axios.get(url, { responseType: 'arraybuffer' });
                 const buffer = Buffer.from(response.data, 'binary');
 
@@ -285,9 +286,9 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                     const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
-                    const subscriptionPlan=await db.subscriptionPlan.findFirst({
-                        where:{
-                            name:getStoreData.plan
+                    const subscriptionPlan = await db.subscriptionPlan.findFirst({
+                        where: {
+                            name: getStoreData.plan
                         }
                     });
 
@@ -763,7 +764,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             const regex = new RegExp(`-${uid}(C|N)`, 'g');
             const imageName = altName.replace(regex, '');
-            
+
             console.log("image name 2", imageName)
 
             if (productid !== '1') {
