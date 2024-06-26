@@ -760,7 +760,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 }
             })
 
-            const alt = imageData.alt.split('.')[0].split('-')
+            const alt = imageData.name.split('.')[0].split('-')
             alt.pop()
 
             const altName = alt.join('-')
