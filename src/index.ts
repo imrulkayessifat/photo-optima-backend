@@ -24,7 +24,10 @@ const app = express();
 const server = http.createServer(app)
 export const io = new Server(server, {
     cors: {
-        origin: '*'
+        origin: 'https://app.photooptima.com',
+        allowedHeaders: ["Access-Control-Allow-Origin","Access-Control-Allow-Methods","Access-Control-Allow-Headers"],
+        methods: ["GET"],
+        credentials: true
     }
 })
 const port = process.env.PORT || 8080;
@@ -80,8 +83,8 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 }
             })
 
-            console.log("single compress for url ",url)
-            
+            console.log("single compress for url ", url)
+
             const response = await axios.get(url, { responseType: 'arraybuffer' });
             const buffer = Buffer.from(response.data, 'binary');
 
