@@ -30,18 +30,28 @@ export const productCreate = async (req: any, res: any) => {
             const productId = id.toString();
 
 
-            const storeCount = await db.store.findMany({
+            const storeExit = await db.store.findFirst({
                 where: {
                     name: shopDomain
                 }
             })
 
-            if (storeCount.length === 0) {
+            if (!storeExit) {
                 await db.store.create({
                     data: {
                         name: shopDomain!
                     }
                 })
+            }
+
+            const productExits = await db.product.findFirst({
+                where: {
+                    id: productId
+                }
+            })
+
+            if (!productExits) {
+                res.status(409).json({ error: "don't need to be create product" })
             }
 
             const product = await db.product.create({
@@ -128,7 +138,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         }
                     })
                     responses.push(response);
-                } else if(alt !== null && alt.split('.')[0].split('-').pop().slice(-1) === 'N') {
+                } else if (alt !== null && alt.split('.')[0].split('-').pop().slice(-1) === 'N') {
                     const response = await db.image.update({
                         where: {
                             uid: parseInt(alt.split('.')[0].split('-').pop().split('N').join(''))
@@ -161,7 +171,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     responses.push(response);
                 }
 
-                io.emit('image_model',()=>{
+                io.emit('image_model', () => {
                     console.log('an event occured in shopify product image upload');
                 });
 
