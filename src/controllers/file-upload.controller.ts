@@ -29,7 +29,7 @@ export const fileUpload = async (req: Request, res: Response): Promise<void> => 
             data: {
                 id: imageData.data.uuid,
                 name: imageData.data.original_filename,
-                alt: imageData.data.original_filename,
+                // alt: imageData.data.original_filename,
                 url: imageData.file,
                 productId: '1',
                 status: 'NOT_COMPRESSED'
@@ -46,7 +46,7 @@ export const fileUpload = async (req: Request, res: Response): Promise<void> => 
             data: {
                 id: imageData.data.uuid,
                 name: imageData.data.original_filename,
-                alt: imageData.data.original_filename,
+                // alt: imageData.data.original_filename,
                 url: imageData.file,
                 productId: '1',
                 status: 'COMPRESSED'

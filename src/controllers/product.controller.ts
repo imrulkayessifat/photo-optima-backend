@@ -120,9 +120,9 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                             id: imageIdStr,
                             url: url,
                             name: alt || name,
-                            alt: alt || name,
-                            fileRename: false,
-                            altRename: false,
+                            // alt: alt || name,
+                            // fileRename: false,
+                            // altRename: false,
                             productId,
                             status: 'COMPRESSED'
                         }
@@ -137,9 +137,9 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                             id: imageIdStr,
                             url: url,
                             name: alt || name,
-                            alt: alt || name,
-                            fileRename: false,
-                            altRename: false,
+                            // alt: alt || name,
+                            // fileRename: false,
+                            // altRename: false,
                             productId,
                             status: 'NOT_COMPRESSED'
                         }
