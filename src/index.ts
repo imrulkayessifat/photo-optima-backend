@@ -25,7 +25,7 @@ const server = http.createServer(app)
 export const io = new Server(server, {
     cors: {
         origin: 'https://app.photooptima.com',
-        allowedHeaders: ["Access-Control-Allow-Origin","Access-Control-Allow-Methods","Access-Control-Allow-Headers"],
+        allowedHeaders: ["Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"],
         methods: ["GET"],
     }
 })
@@ -169,6 +169,15 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         },
                     })
 
+                    await db.store.update({
+                        where: {
+                            name: storeName
+                        },
+                        data: {
+                            plan: 'FREE'
+                        }
+                    })
+
                 }
             }
 
@@ -302,6 +311,14 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                             headers: {
                                 'X-Shopify-Access-Token': `${accessToken.access_token}`
                             },
+                        })
+                        await db.store.update({
+                            where: {
+                                name: storeName
+                            },
+                            data: {
+                                plan: 'FREE'
+                            }
                         })
 
                     }
