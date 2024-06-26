@@ -136,7 +136,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         data: {
                             id: imageIdStr,
                             url: url,
-                            name: alt || name,
+                            // name: alt || name,
                             // alt: alt || name,
                             // fileRename: false,
                             // altRename: false,
