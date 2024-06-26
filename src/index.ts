@@ -109,15 +109,15 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             // fs.writeFileSync('hello.jpg', compressedBuffer);
 
-            const subscriptionPlan = {
-                "FREE": 25,
-                "MICRO": 500,
-                "PRO": 2048,
-                "ADVANCED": 5120,
-                "PREMIUM": 15360,
-                "PLUS": 51200,
-                "ENTERPRISE": 102400
-            }
+            // const subscriptionPlan = {
+            //     "FREE": 25,
+            //     "MICRO": 500,
+            //     "PRO": 2048,
+            //     "ADVANCED": 5120,
+            //     "PREMIUM": 15360,
+            //     "PLUS": 51200,
+            //     "ENTERPRISE": 102400
+            // }
 
             // Update the status in the database
             // const updatedImage = await db.image.update({
@@ -151,7 +151,13 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                 const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
-                if (subscriptionPlan[updatedData.plan] < updatedData.dataUsed!) {
+                const subscriptionPlan=await db.subscriptionPlan.findFirst({
+                    where:{
+                        name:store.plan
+                    }
+                });
+
+                if (subscriptionPlan.bandwidth < updatedData.dataUsed!) {
 
                     await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/recurring_application_charges/${updatedData.chargeId}.json`, {
                         method: 'DELETE',
@@ -232,15 +238,15 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                 // fs.writeFileSync('hello.jpg', compressedBuffer);
 
-                const subscriptionPlan = {
-                    "FREE": 25,
-                    "MICRO": 500,
-                    "PRO": 2048,
-                    "ADVANCED": 5120,
-                    "PREMIUM": 15360,
-                    "PLUS": 51200,
-                    "ENTERPRISE": 102400
-                }
+                // const subscriptionPlan = {
+                //     "FREE": 25,
+                //     "MICRO": 500,
+                //     "PRO": 2048,
+                //     "ADVANCED": 5120,
+                //     "PREMIUM": 15360,
+                //     "PLUS": 51200,
+                //     "ENTERPRISE": 102400
+                // }
 
                 // Update the status in the database
                 // const updatedImage = await db.image.update({
@@ -279,7 +285,13 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                     const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
-                    if (subscriptionPlan[updatedData.plan] < updatedData.dataUsed!) {
+                    const subscriptionPlan=await db.subscriptionPlan.findFirst({
+                        where:{
+                            name:getStoreData.plan
+                        }
+                    });
+
+                    if (subscriptionPlan.bandwidth < updatedData.dataUsed!) {
 
                         await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/recurring_application_charges/${updatedData.chargeId}.json`, {
                             method: 'DELETE',
