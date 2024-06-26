@@ -27,7 +27,6 @@ export const io = new Server(server, {
         origin: 'https://app.photooptima.com',
         allowedHeaders: ["Access-Control-Allow-Origin","Access-Control-Allow-Methods","Access-Control-Allow-Headers"],
         methods: ["GET"],
-        credentials: true
     }
 })
 const port = process.env.PORT || 8080;
