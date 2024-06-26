@@ -80,7 +80,8 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 }
             })
 
-
+            console.log("single compress for url ",url)
+            
             const response = await axios.get(url, { responseType: 'arraybuffer' });
             const buffer = Buffer.from(response.data, 'binary');
 
