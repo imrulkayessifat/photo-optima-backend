@@ -70,7 +70,8 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
         });
 
 
-        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) 
+        {
 
             const data = JSON.parse(msg.content.toString());
 
