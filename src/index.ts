@@ -70,8 +70,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
         });
 
 
-        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) 
-        {
+        channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
 
             const data = JSON.parse(msg.content.toString());
 
@@ -163,7 +162,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                 if (subscriptionPlan.bandwidth < updatedData.dataUsed!) {
 
-                    await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/recurring_application_charges/${updatedData.chargeId}.json`, {
+                    await fetch(`https://${storeName}/admin/api/2024-04/recurring_application_charges/${updatedData.chargeId}.json`, {
                         method: 'DELETE',
                         headers: {
                             'X-Shopify-Access-Token': `${accessToken.access_token}`
@@ -307,7 +306,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                     if (subscriptionPlan.bandwidth < updatedData.dataUsed!) {
 
-                        await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/recurring_application_charges/${updatedData.chargeId}.json`, {
+                        await fetch(`https://${storeName}/admin/api/2024-04/recurring_application_charges/${updatedData.chargeId}.json`, {
                             method: 'DELETE',
                             headers: {
                                 'X-Shopify-Access-Token': `${accessToken.access_token}`
@@ -528,7 +527,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                 const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
-                const getImageData = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${singleImageData.id}.json`, {
+                const getImageData = await fetch(`https://${storeName}/admin/api/2024-01/products/${productid}/images/${singleImageData.id}.json`, {
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Shopify-Access-Token': `${accessToken.access_token}`
@@ -542,7 +541,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 const base64ImageForBackup = Buffer.from(buffer).toString('base64');
 
 
-                const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${singleImageData.id}.json`, {
+                const deleteImage = await fetch(`https://${storeName}/admin/api/2024-01/products/${productid}/images/${singleImageData.id}.json`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -551,7 +550,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 })
 
                 if (deleteImage.status === 200) {
-                    const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {
+                    const response = await fetch(`https://${storeName}/admin/api/2024-01/products/${productid}/images.json`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -787,6 +786,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             const imageName = altName.replace(regex, '');
 
             console.log("image name 2", imageName)
+            console.log("store name", storeName)
 
             if (productid !== '1') {
                 const image = {
@@ -810,7 +810,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 const accessToken = await accessTokenResponse.json() as AccessTokenType;
 
 
-                const deleteImage = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images/${imageData.id}.json`, {
+                const deleteImage = await fetch(`https://${storeName}/admin/api/2024-01/products/${productid}/images/${imageData.id}.json`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -819,7 +819,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 })
 
                 if (deleteImage.status === 200) {
-                    const response = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/${productid}/images.json`, {
+                    const response = await fetch(`https://${storeName}/admin/api/2024-01/products/${productid}/images.json`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
