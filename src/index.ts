@@ -356,11 +356,11 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
             const data = JSON.parse(msg.content.toString());
 
             // Access id and url from the data
-            const { uid, productId: productid, url, store_name: storeName } = data;
+            const { uid, productId: productid, url, store_name } = data;
 
             const getStoreData = await db.store.findFirst({
                 where: {
-                    name: storeName
+                    name: store_name
                 }
             })
 
@@ -370,7 +370,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ uid, productid, url, storeName })
+                    body: JSON.stringify({ uid, productid, url, store_name })
                 })
             }
 
