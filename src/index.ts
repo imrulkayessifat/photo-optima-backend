@@ -769,7 +769,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
             const content = JSON.parse(msg.content.toString());
 
-            const { uid, productid, url, storeName } = content;
+            const { uid, productid, url, store_name:storeName } = content;
 
             const imageData = await db.image.findFirst({
                 where: {
