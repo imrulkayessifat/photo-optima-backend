@@ -11,6 +11,6 @@ echo "Installing Dependencies..."
 npm install --yes
 
 echo "PM2 Reload"
-pm2 reload mq-server
+pm2 reload photo-optima-backend
 
 echo "Deployment Finished!!"
