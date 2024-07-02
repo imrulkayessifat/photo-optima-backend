@@ -141,7 +141,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     }
                 })
 
-                const accessTokenResponse = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
+                const accessTokenResponse = await fetch(`https://${storeName}/admin/oauth/access_token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -285,7 +285,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         }
                     })
 
-                    const accessTokenResponse = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
+                    const accessTokenResponse = await fetch(`https://${storeName}/admin/oauth/access_token`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -514,7 +514,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     attachment: base64Image,
                 };
 
-                const accessTokenResponse = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
+                const accessTokenResponse = await fetch(`https://${storeName}/admin/oauth/access_token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -795,7 +795,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     attachment: url,
                 };
 
-                const accessTokenResponse = await fetch(`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
+                const accessTokenResponse = await fetch(`https://${storeName}/admin/oauth/access_token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
