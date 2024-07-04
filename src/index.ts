@@ -559,7 +559,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
                         await db.backupimage.create({
                             data: {
-                                restoreId: uid,
+                                restoreId: `${uid}`,
                                 url: bufferString
                             }
                         });
@@ -725,20 +725,6 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     })
 
                     const data = await response.json();
-
-
-
-                    // await db.backupfilename.delete({
-                    //     where: {
-                    //         restoreId: `${id}`
-                    //     }
-                    // })
-
-                    // await db.backupaltname.delete({
-                    //     where: {
-                    //         restoreId: `${id}`
-                    //     }
-                    // })
 
                 }
 
