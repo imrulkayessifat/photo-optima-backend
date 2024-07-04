@@ -569,7 +569,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 }
             } catch (error) {
                 console.error('Error processing message', error);
-            }u
+            }
         }, {
             noAck: true
         });
