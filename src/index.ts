@@ -54,13 +54,15 @@ io.on('connection', (socket) => {
 
 amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connection: { createChannel: (arg0: (error1: any, channel: any) => void) => void; }) {
     if (error0) {
-        throw error0;
+        console.error('Failed to connect to RabbitMQ', error0);
+        process.exit(1);
     }
 
     // shopify_to_compressor
     connection.createChannel(function (error1, channel) {
         if (error1) {
-            throw error1;
+            console.error('Failed to create a channel', error1);
+            process.exit(1);
         }
 
         const queue = 'shopify_to_compressor';
@@ -72,123 +74,95 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
         channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
 
-            const data = JSON.parse(msg.content.toString());
+            try {
+                const data = JSON.parse(msg.content.toString());
+                const { uid, productid, url, storeName } = data;
 
-            const { uid, productid, url, storeName } = data;
-
-            const store = await db.store.findFirst({
-                where: {
-                    name: storeName
-                }
-            })
-
-            console.log("single compress for url ", url)
-
-            const response = await axios.get(url, { responseType: 'arraybuffer' });
-            const buffer = Buffer.from(response.data, 'binary');
-
-            const megabytes = (buffer.length / 1024) / 1024;
-
-            let qualifyPercenties;
-
-            const uint8Array = new Uint8Array(buffer);
-            const header = uint8Array.subarray(0, 4);
-
-            if (store.compressionType === 'BALANCED') {
-                qualifyPercenties = 80
-            } else if (store.compressionType === 'CONSERVATIVE') {
-                qualifyPercenties = 65;
-            } else {
-                if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47) {
-                    qualifyPercenties = store.png;
-                } else if (header[0] === 0xFF && header[1] === 0xD8 && header[2] === 0xFF) {
-                    qualifyPercenties = store.jpeg;
-                } else {
-                    qualifyPercenties = store.others
-                }
-            }
-
-            const compressedBuffer = await sharp(buffer).jpeg({ quality: qualifyPercenties }).toBuffer();
-
-            // fs.writeFileSync('hello.jpg', compressedBuffer);
-
-            // const subscriptionPlan = {
-            //     "FREE": 25,
-            //     "MICRO": 500,
-            //     "PRO": 2048,
-            //     "ADVANCED": 5120,
-            //     "PREMIUM": 15360,
-            //     "PLUS": 51200,
-            //     "ENTERPRISE": 102400
-            // }
-
-            // Update the status in the database
-            // const updatedImage = await db.image.update({
-            //     where: { id: id },
-            //     data: { status: 'COMPRESSED' },
-            // });
-
-
-            if (store.dataUsed !== null) {
-                const usedData = megabytes + store.dataUsed
-                const updatedData = await db.store.update({
-                    where: {
-                        name: storeName
-                    },
-                    data: {
-                        dataUsed: usedData
-                    }
-                })
-
-                const accessTokenResponse = await fetch(`https://${storeName}/admin/oauth/access_token`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        'client_id': `${process.env.SHOPIFY_CLIENT_ID}`,
-                        'client_secret': `${process.env.SHOPIFY_CLIENT_SECRET}`,
-                        'grant_type': 'client_credentials'
-                    })
-                })
-
-                const accessToken = await accessTokenResponse.json() as AccessTokenType;
-
-                const subscriptionPlan = await db.subscriptionPlan.findFirst({
-                    where: {
-                        name: store.plan
-                    }
+                const store = await db.store.findFirst({
+                    where: { name: storeName }
                 });
 
-                if (subscriptionPlan.bandwidth < updatedData.dataUsed!) {
-
-                    await fetch(`https://${storeName}/admin/api/2024-04/recurring_application_charges/${updatedData.chargeId}.json`, {
-                        method: 'DELETE',
-                        headers: {
-                            'X-Shopify-Access-Token': `${accessToken.access_token}`
-                        },
-                    })
-
-                    await db.store.update({
-                        where: {
-                            name: storeName
-                        },
-                        data: {
-                            plan: 'FREE'
-                        }
-                    })
-
+                if (!store) {
+                    console.error('Store not found');
+                    return;
                 }
+
+                console.log('Single compress for URL:', url);
+
+                const response = await axios.get(url, { responseType: 'arraybuffer' });
+                const buffer = Buffer.from(response.data, 'binary');
+                const megabytes = buffer.length / 1024 / 1024;
+
+                let qualifyPercenties;
+                const uint8Array = new Uint8Array(buffer);
+                const header = uint8Array.subarray(0, 4);
+
+                if (store.compressionType === 'BALANCED') {
+                    qualifyPercenties = 80;
+                } else if (store.compressionType === 'CONSERVATIVE') {
+                    qualifyPercenties = 65;
+                } else {
+                    if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47) {
+                        qualifyPercenties = store.png;
+                    } else if (header[0] === 0xFF && header[1] === 0xD8 && header[2] === 0xFF) {
+                        qualifyPercenties = store.jpeg;
+                    } else {
+                        qualifyPercenties = store.others;
+                    }
+                }
+
+                const compressedBuffer = await sharp(buffer).jpeg({ quality: qualifyPercenties }).toBuffer();
+
+                if (store.dataUsed !== null) {
+                    const usedData = megabytes + store.dataUsed;
+                    await db.store.update({
+                        where: { name: storeName },
+                        data: { dataUsed: usedData }
+                    });
+
+                    const accessTokenResponse = await fetch(`https://${storeName}/admin/oauth/access_token`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            'client_id': process.env.SHOPIFY_CLIENT_ID,
+                            'client_secret': process.env.SHOPIFY_CLIENT_SECRET,
+                            'grant_type': 'client_credentials'
+                        })
+                    });
+
+                    const accessToken = await accessTokenResponse.json();
+                    const subscriptionPlan = await db.subscriptionPlan.findFirst({
+                        where: { name: store.plan }
+                    });
+
+                    if (subscriptionPlan.bandwidth < usedData) {
+                        await fetch(`https://${storeName}/admin/api/2024-04/recurring_application_charges/${store.chargeId}.json`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-Shopify-Access-Token': accessToken.access_token
+                            }
+                        });
+
+                        await db.store.update({
+                            where: { name: storeName },
+                            data: { plan: 'FREE' }
+                        });
+                    }
+                }
+
+                await fetch(`${process.env.MQSERVER}/image/upload-image`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ uid, productid, compressedBuffer, storeName })
+                });
+
+            } catch (error) {
+                console.error('Error processing message', error);
             }
-
-
-            const uploadImage = await fetch(`${process.env.MQSERVER}/image/upload-image`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ uid, productid, compressedBuffer, storeName })
-            })
 
         }, {
             noAck: true
