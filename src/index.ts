@@ -399,7 +399,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                 const response = await fetch(`${process.env.MQSERVER}/rename/auto-alt-rename`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ storeName: store_name, uid:`${uid}` })
+                    body: JSON.stringify({ storeName: store_name, uid: `${uid}` })
                 });
 
                 if (!response.ok) {
@@ -510,7 +510,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         const uploadData = await uploadResponse.json();
                         await db.backupimage.create({
                             data: {
-                                restoreId: uid,
+                                restoreId: `${uid}`,
                                 url: base64ImageForBackup
                             }
                         });
