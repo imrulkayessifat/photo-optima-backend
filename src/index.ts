@@ -347,7 +347,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     return;
                 }
 
-                const response = await fetch(`${process.env.MQSERVER}/rename/file-rename`, {
+                const response = await fetch(`${process.env.MQSERVER}/rename/auto-file-rename`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ storeName: store_name, uid: `${uid}` })
