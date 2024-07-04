@@ -278,7 +278,8 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
     // auto_restore
     connection.createChannel(function (error1, channel) {
         if (error1) {
-            throw error1;
+            console.error('Failed to create auto_restore channel', error1);
+            process.exit(1);
         }
 
         const queue = 'auto_restore';
@@ -290,25 +291,28 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
         channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
 
-            const data = JSON.parse(msg.content.toString());
+            try {
+                const data = JSON.parse(msg.content.toString());
+                const { uid, productId: productid, url, store_name } = data;
 
-            // Access id and url from the data
-            const { uid, productId: productid, url, store_name } = data;
+                const getStoreData = await db.store.findFirst({
+                    where: { name: store_name }
+                });
 
-            const getStoreData = await db.store.findFirst({
-                where: {
-                    name: store_name
+                if (!getStoreData) {
+                    console.error(`Store ${store_name} not found`);
+                    return;
                 }
-            })
 
-            if (getStoreData.batchRestore) {
-                const uploadImage = await fetch(`${process.env.MQSERVER}/image/restore-upload`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ uid, productid, url, store_name })
-                })
+                if (getStoreData.batchRestore) {
+                    await fetch(`${process.env.MQSERVER}/image/restore-upload`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ uid, productid, url, store_name })
+                    });
+                }
+            } catch (error) {
+                console.error('Error processing message', error);
             }
 
         }, {
@@ -319,7 +323,8 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
     // auto_file_rename
     connection.createChannel(function (error1, channel) {
         if (error1) {
-            throw error1;
+            console.error('Failed to create auto_file_rename channel', error1);
+            process.exit(1);
         }
 
         const queue = 'auto_file_rename';
@@ -331,30 +336,32 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
         channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
 
-            const data = JSON.parse(msg.content.toString());
+            try {
+                const data = JSON.parse(msg.content.toString());
+                const { uid, store_name } = data;
 
-            // Access id and url from the data
-            const { uid, store_name } = data;
+                const image = await db.image.findFirst({ where: { uid } });
 
-            const image = await db.image.findFirst({
-                where: {
-                    uid: uid
+                if (!image) {
+                    console.error(`Image with UID ${uid} not found`);
+                    return;
                 }
-            })
 
-            if (image) {
-                const req = await fetch(`${process.env.MQSERVER}/rename/file-rename`, {
+                const response = await fetch(`${process.env.MQSERVER}/rename/file-rename`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        storeName: store_name,
-                        uid: `${uid}`,
-                    })
-                })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ storeName: store_name, uid: `${uid}` })
+                });
 
-                const data = await req.json()
+                if (!response.ok) {
+                    console.error(`Failed to rename file: ${response.statusText}`);
+                    return;
+                }
+
+                const responseData = await response.json();
+                console.log(`File renamed successfully: ${responseData}`);
+            } catch (error) {
+                console.error('Error processing message', error);
             }
 
         }, {
@@ -365,7 +372,8 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
     // auto_alt_rename
     connection.createChannel(function (error1, channel) {
         if (error1) {
-            throw error1;
+            console.error('Failed to create auto_alt_rename channel', error1);
+            process.exit(1);
         }
 
         const queue = 'auto_alt_rename';
@@ -377,30 +385,32 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
 
         channel.consume(queue, async function (msg: { content: { toString: () => any; }; }) {
 
-            const data = JSON.parse(msg.content.toString());
+            try {
+                const data = JSON.parse(msg.content.toString());
+                const { uid, store_name } = data;
 
-            // Access id and url from the data
-            const { uid, store_name } = data;
+                const image = await db.image.findFirst({ where: { uid } });
 
-            const image = await db.image.findFirst({
-                where: {
-                    uid: uid
+                if (!image) {
+                    console.error(`Image with UID ${uid} not found`);
+                    return;
                 }
-            })
 
-            if (image) {
-                const req = await fetch(`${process.env.MQSERVER}/rename/alt-rename`, {
+                const response = await fetch(`${process.env.MQSERVER}/rename/alt-rename`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        storeName: store_name,
-                        uid: `${uid}`,
-                    })
-                })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ storeName: store_name, uid:`${uid}` })
+                });
 
-                const data = await req.json()
+                if (!response.ok) {
+                    console.error(`Failed to rename alt text: ${response.statusText}`);
+                    return;
+                }
+
+                const responseData = await response.json();
+                console.log(`Alt text renamed successfully: ${responseData}`);
+            } catch (error) {
+                console.error('Error processing message', error);
             }
 
         }, {
