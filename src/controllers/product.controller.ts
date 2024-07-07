@@ -112,15 +112,9 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     }
                 })
     
-                // let responses = [];
-    
                 for (const image of images) {
                     const { id: imageId, src: url, width, height, alt } = image;
                     const imageIdStr = imageId.toString();
-    
-                    // const existingImage = await db.image.findFirst({
-                    //     where: { uid: parseInt(alt.split('.')[0].split('-').pop().split('C').join(''))},
-                    // });
 
                     console.log("image log",image)
     
@@ -183,54 +177,6 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     io.emit('image_model', () => {
                         console.log('an event occured in shopify product image upload');
                     });
-    
-    
-                    // if (existingImage) {
-                    //     let data = {
-                    //         id: existingImage.id,
-                    //         url: existingImage.url,
-                    //         productId: existingImage.productId,
-                    //         status: existingImage.status,
-                    //         name: existingImage.name,
-                    //         fileRename: existingImage.fileRename,
-                    //         altRename: existingImage.altRename,
-                    //         alt: existingImage.alt
-                    //     };
-                    //     if (alt === null) {
-                    //         data.status = 'NOT_COMPRESSED'
-                    //     }
-                    //     else if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
-                    //         data.status = 'COMPRESSED';
-                    //     }
-                    //     const response = await db.image.update({
-                    //         where: { uid: existingImage.uid },
-                    //         data,
-                    //     });
-                    //     responses.push(response);
-                    // } else {
-                    //     let status: Status = 'NOT_COMPRESSED';
-                    //     if (alt === null) {
-                    //         status = 'NOT_COMPRESSED'
-                    //     } else if (alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
-                    //         status = 'COMPRESSED';
-                    //     }
-    
-                    //     const response = await db.image.create({
-                    //         data: {
-                    //             id: imageIdStr,
-                    //             url,
-                    //             name: alt || name,
-                    //             alt: alt || name,
-                    //             fileRename: false,
-                    //             altRename: false,
-                    //             productId,
-                    //             status
-                    //         },
-                    //     });
-    
-    
-                    //     responses.push(response);
-                    // }
     
                     const storeRes = await db.store.findFirst({
                         where: {
