@@ -159,19 +159,29 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         })
                         responses.push(response);
                     } else {
-                        const response = await db.image.create({
-                            data: {
-                                id: imageIdStr,
-                                url,
-                                name: alt || name,
-                                alt: alt || name,
-                                fileRename: false,
-                                altRename: false,
-                                productId,
-                                status: 'NOT_COMPRESSED'
-                            },
-                        });
-                        responses.push(response);
+
+                        const imageExit = await db.image.findFirst({
+                            where:{
+                                id:imageIdStr
+                            }
+                        })
+
+                        if(!imageExit){
+                            const response = await db.image.create({
+                                data: {
+                                    id: imageIdStr,
+                                    url,
+                                    name: alt || name,
+                                    alt: alt || name,
+                                    fileRename: false,
+                                    altRename: false,
+                                    productId,
+                                    status: 'NOT_COMPRESSED'
+                                },
+                            });
+                            responses.push(response);
+                        }
+                        
                     }
     
                     io.emit('image_model', () => {
