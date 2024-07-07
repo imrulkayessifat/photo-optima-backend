@@ -121,6 +121,8 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     // const existingImage = await db.image.findFirst({
                     //     where: { uid: parseInt(alt.split('.')[0].split('-').pop().split('C').join(''))},
                     // });
+
+                    console.log("image log",image)
     
                     const newUrl = new URL(url);
                     const name = newUrl.pathname.split('/').pop() || null;
