@@ -10,69 +10,48 @@ const getRawBody = require('raw-body')
 
 const webhooks_secret_key = process.env.WEBHOOKS_SECRET_KEY;
 
+const verifyRequest = async (req: Request) => {
+    const hmac = req.get('X-Shopify-Hmac-Sha256');
+    const body = await getRawBody(req);
+    const hash = crypto
+        .createHmac('sha256', webhooks_secret_key)
+        .update(body, 'utf8', 'hex')
+        .digest('base64');
+    if (hmac !== hash) {
+        throw new Error("Unauthorized");
+    }
+    req.body = JSON.parse(body.toString());
+    return req.body;
+};
+
 export const productCreate = async (req: any, res: any) => {
     try {
+        const body = await verifyRequest(req);
+        const { id, title } = body;
+        const productId = id.toString();
+        const shopDomain = req.get('x-shopify-shop-domain');
 
-        const shopDomain = req.get('x-shopify-shop-domain')
-
-        const hmac = req.get('X-Shopify-Hmac-Sha256')
-        const body = await getRawBody(req)
-
-        const hash = crypto
-            .createHmac('sha256', webhooks_secret_key)
-            .update(body, 'utf8', 'hex')
-            .digest('base64')
-
-        if (hmac === hash) {
-            try {
-                req.body = JSON.parse(body.toString());
-                const productData = req.body;
-                const { id, title } = productData;
-
-                const productId = id.toString();
-
-
-                const storeExit = await db.store.findFirst({
-                    where: {
-                        name: shopDomain
-                    }
-                })
-
-                if (!storeExit) {
-                    await db.store.create({
-                        data: {
-                            name: shopDomain!
-                        }
-                    })
-                }
-
-                const productExits = await db.product.findFirst({
-                    where: {
-                        id: productId
-                    }
-                })
-
-                if (!productExits) {
-                    res.status(409).json({ error: "don't need to be create product" })
-                }
-
-                const product = await db.product.create({
-                    data: {
-                        id: productId,
-                        storename: shopDomain!,
-                        title,
-                    }
-                })
-
-                res.status(201).json({ data: product });
-            } catch (e) {
-                res.status(500).json({ error: 'An error occurred while storing product data.' });
-            }
-        } else {
-            res.status(403).json({ error: "you don't have access" })
+        const storeExist = await db.store.findFirst({ where: { name: shopDomain } });
+        if (!storeExist) {
+            await db.store.create({ data: { name: shopDomain! } });
         }
-    } catch (e) {
-        res.status(400).json({ error: 'something went wrong!' })
+
+        const productExists = await db.product.findFirst({ where: { id: productId } });
+        if (productExists) {
+            return res.status(409).json({ error: "Product already exists" });
+        }
+
+        const product = await db.product.create({
+            data: { id: productId, storename: shopDomain!, title }
+        });
+
+        res.status(201).json({ data: product });
+    } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ error: "Unauthorized access" });
+        }
+        console.error(error);
+        res.status(500).json({ error: 'An error occurred while storing product data.' });
     }
 }
 
