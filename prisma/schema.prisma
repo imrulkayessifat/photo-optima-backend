@@ -167,7 +167,7 @@ model Image {
   fileRename Boolean? @default(false)
   altRename  Boolean? @default(false)
   storename  String
-  product    Product  @relation(fields: [id, storename], references: [id, storename])
+  product    Product  @relation(fields: [productId, storename], references: [id, storename])
 }
 
 model Backupimage {
