@@ -110,7 +110,7 @@ model Store {
 }
 
 model Filerename {
-  id                 String  @id
+  id                 String
   product_vendor     Boolean @default(false)
   variant_title      Boolean @default(false)
   product_page_title Boolean @default(false)
@@ -120,10 +120,12 @@ model Filerename {
   product_sku        Boolean @default(false)
   storename          String
   store              Store   @relation(fields: [storename], references: [name])
+
+  @@id([id, storename])
 }
 
 model Altrename {
-  id                 String  @id
+  id                 String
   product_vendor     Boolean @default(false)
   variant_title      Boolean @default(false)
   product_page_title Boolean @default(false)
@@ -133,10 +135,12 @@ model Altrename {
   product_sku        Boolean @default(false)
   storename          String
   store              Store   @relation(fields: [storename], references: [name])
+
+  @@id([id, storename])
 }
 
 model Product {
-  id                 String  @id
+  id                 String
   title              String
   images             Image[]
   product_vendor     String? @default("")
@@ -148,6 +152,8 @@ model Product {
   product_sku        String? @default("")
   storename          String
   store              Store   @relation(fields: [storename], references: [name])
+
+  @@id([id, storename])
 }
 
 model Image {
@@ -160,7 +166,8 @@ model Image {
   status     Status?  @default(NOT_COMPRESSED)
   fileRename Boolean? @default(false)
   altRename  Boolean? @default(false)
-  product    Product  @relation(fields: [productId], references: [id])
+  storename  String
+  product    Product  @relation(fields: [id, storename], references: [id, storename])
 }
 
 model Backupimage {

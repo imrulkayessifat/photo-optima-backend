@@ -76,10 +76,15 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
     
                 const productId = id.toString();
     
-                await db.product.update({
-                    where: {
-                        id: productId
+                const productInput = {
+                    id_storename: {
+                        id: productId,
+                        storename: shopDomain,
                     },
+                };
+
+                await db.product.update({
+                    where: productInput,
                     data: {
                         product_vendor: productData.vendor,
                         variant_title: productData.variants[0].title,
@@ -155,7 +160,8 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                                     fileRename: false,
                                     altRename: false,
                                     productId,
-                                    status: 'NOT_COMPRESSED'
+                                    status: 'NOT_COMPRESSED',
+                                    storename:shopDomain
                                 },
                             });
                             responses.push(response);

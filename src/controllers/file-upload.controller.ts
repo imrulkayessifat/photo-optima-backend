@@ -63,7 +63,8 @@ export const fileUpload = async (req: Request, res: Response): Promise<void> => 
                     alt: imageData.data.original_filename,
                     url: imageData.file,
                     productId: '1',
-                    status: 'NOT_COMPRESSED'
+                    status: 'NOT_COMPRESSED',
+                    storename:`${state}`
                 }
             })
         }
