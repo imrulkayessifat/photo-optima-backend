@@ -461,26 +461,21 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         attachment: base64Image
                     };
 
-                    const accessTokenResponse = await fetch(`https://${storeName}/admin/oauth/access_token`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            client_id: process.env.SHOPIFY_CLIENT_ID,
-                            client_secret: process.env.SHOPIFY_CLIENT_SECRET,
-                            grant_type: 'client_credentials'
-                        })
+                    const accessTokenResponse = await fetch(`${process.env.NEXT_PUBLIC_MQSERVER}/session/${storeName}`, {
+                        method: 'GET',
                     });
-
-                    const accessToken = await accessTokenResponse.json();
-                    if (!accessToken.access_token) {
-                        console.error('Failed to get access token');
-                        return;
+                
+                
+                    if (!accessTokenResponse.ok) {
+                        const errorDetails = await accessTokenResponse.text();
+                        return { error: `${errorDetails}` };
                     }
+                    const { access_token } = await accessTokenResponse.json();
 
                     const getImageData = await fetch(`https://${storeName}/admin/api/2024-01/products/${productid}/images/${singleImageData.id}.json`, {
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-Shopify-Access-Token': accessToken.access_token
+                            'X-Shopify-Access-Token': access_token
                         }
                     });
 
@@ -493,7 +488,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-Shopify-Access-Token': accessToken.access_token
+                            'X-Shopify-Access-Token': access_token
                         }
                     });
 
@@ -502,7 +497,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-Shopify-Access-Token': accessToken.access_token
+                                'X-Shopify-Access-Token': access_token
                             },
                             body: JSON.stringify({ image })
                         });
