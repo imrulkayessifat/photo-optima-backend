@@ -120,19 +120,16 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         data: { dataUsed: usedData }
                     });
 
-                    const accessTokenResponse = await fetch(`https://${storeName}/admin/oauth/access_token`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            'client_id': process.env.SHOPIFY_CLIENT_ID,
-                            'client_secret': process.env.SHOPIFY_CLIENT_SECRET,
-                            'grant_type': 'client_credentials'
-                        })
+                    const accessTokenResponse = await fetch(`${process.env.MQSERVER}/session/${storeName}`, {
+                        method: 'GET',
                     });
-
-                    const accessToken = await accessTokenResponse.json();
+                
+                
+                    if (!accessTokenResponse.ok) {
+                        const errorDetails = await accessTokenResponse.text();
+                        return { error: `${errorDetails}` };
+                    }
+                    const { access_token } = await accessTokenResponse.json();
                     const subscriptionPlan = await db.subscriptionPlan.findFirst({
                         where: { name: store.plan }
                     });
@@ -141,7 +138,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         await fetch(`https://${storeName}/admin/api/2024-04/recurring_application_charges/${store.chargeId}.json`, {
                             method: 'DELETE',
                             headers: {
-                                'X-Shopify-Access-Token': accessToken.access_token
+                                'X-Shopify-Access-Token': access_token
                             }
                         });
 
@@ -231,17 +228,16 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                             data: { dataUsed: usedData }
                         });
 
-                        const accessTokenResponse = await fetch(`https://${storeName}/admin/oauth/access_token`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                client_id: process.env.SHOPIFY_CLIENT_ID,
-                                client_secret: process.env.SHOPIFY_CLIENT_SECRET,
-                                grant_type: 'client_credentials'
-                            })
+                        const accessTokenResponse = await fetch(`${process.env.MQSERVER}/session/${storeName}`, {
+                            method: 'GET',
                         });
-
-                        const accessToken = await accessTokenResponse.json();
+                    
+                    
+                        if (!accessTokenResponse.ok) {
+                            const errorDetails = await accessTokenResponse.text();
+                            return { error: `${errorDetails}` };
+                        }
+                        const { access_token } = await accessTokenResponse.json();
 
                         const subscriptionPlan = await db.subscriptionPlan.findFirst({
                             where: { name: getStoreData.plan }
@@ -250,7 +246,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         if (subscriptionPlan.bandwidth < usedData) {
                             await fetch(`https://${storeName}/admin/api/2024-04/recurring_application_charges/${getStoreData.chargeId}.json`, {
                                 method: 'DELETE',
-                                headers: { 'X-Shopify-Access-Token': accessToken.access_token }
+                                headers: { 'X-Shopify-Access-Token': access_token }
                             });
 
                             await db.store.update({
@@ -702,29 +698,23 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         attachment: url
                     };
 
-                    const accessTokenResponse = await fetch(`https://${storeName}/admin/oauth/access_token`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            client_id: process.env.SHOPIFY_CLIENT_ID,
-                            client_secret: process.env.SHOPIFY_CLIENT_SECRET,
-                            grant_type: 'client_credentials'
-                        })
+                    const accessTokenResponse = await fetch(`${process.env.MQSERVER}/session/${storeName}`, {
+                        method: 'GET',
                     });
-
-                    const accessToken = await accessTokenResponse.json();
-                    if (!accessToken.access_token) {
-                        console.error('Failed to get access token');
-                        return;
+                
+                
+                    if (!accessTokenResponse.ok) {
+                        const errorDetails = await accessTokenResponse.text();
+                        return { error: `${errorDetails}` };
                     }
+                    const { access_token } = await accessTokenResponse.json();
+
 
                     const deleteImage = await fetch(`https://${storeName}/admin/api/2024-01/products/${productid}/images/${imageData.id}.json`, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-Shopify-Access-Token': accessToken.access_token
+                            'X-Shopify-Access-Token': access_token
                         }
                     });
 
