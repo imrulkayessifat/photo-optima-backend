@@ -461,7 +461,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         attachment: base64Image
                     };
 
-                    const accessTokenResponse = await fetch(`${process.env.NEXT_PUBLIC_MQSERVER}/session/${storeName}`, {
+                    const accessTokenResponse = await fetch(`${process.env.MQSERVER}/session/${storeName}`, {
                         method: 'GET',
                     });
                 
