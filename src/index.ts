@@ -472,6 +472,8 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     }
                     const { access_token } = await accessTokenResponse.json();
 
+                    console.log("access token ",access_token)
+
                     const getImageData = await fetch(`https://${storeName}/admin/api/2024-01/products/${productid}/images/${singleImageData.id}.json`, {
                         headers: {
                             'Content-Type': 'application/json',
