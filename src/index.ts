@@ -723,7 +723,7 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-Shopify-Access-Token': accessToken.access_token
+                                'X-Shopify-Access-Token': access_token
                             },
                             body: JSON.stringify({ image })
                         });
