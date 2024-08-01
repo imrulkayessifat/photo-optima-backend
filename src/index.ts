@@ -482,7 +482,10 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                     });
 
                     const getImageDataRes = await getImageData.json();
+
+                    console.log("get image data ",getImageDataRes)
                     const response = await axios.get(getImageDataRes.image.src, { responseType: 'arraybuffer' });
+                    console.log("response")
                     const buffer = Buffer.from(response.data, 'binary');
                     const base64ImageForBackup = Buffer.from(buffer).toString('base64');
 
@@ -493,6 +496,8 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                             'X-Shopify-Access-Token': access_token
                         }
                     });
+
+                    console.log("deleteImage")
 
                     if (deleteImage.status === 200) {
                         const uploadResponse = await fetch(`https://${storeName}/admin/api/2024-01/products/${productid}/images.json`, {
@@ -505,12 +510,14 @@ amqp.connect('amqp://localhost?frameMax=15728640', function (error0: any, connec
                         });
 
                         const uploadData = await uploadResponse.json();
+                        console.log("uploadData")
                         await db.backupimage.create({
                             data: {
                                 restoreId: `${uid}`,
                                 url: base64ImageForBackup
                             }
                         });
+                        console.log("backupimage")
                     } else {
                         console.error('Failed to delete image from Shopify');
                     }
