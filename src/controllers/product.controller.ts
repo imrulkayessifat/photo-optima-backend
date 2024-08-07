@@ -9,6 +9,7 @@ const db = new PrismaClient();
 const getRawBody = require('raw-body')
 
 const webhooks_secret_key = process.env.WEBHOOKS_SECRET_KEY;
+const app_secret = process.env.SHOPIFY_CLIENT_SECRET;
 
 const verifyRequest = async (req: Request) => {
     const hmac = req.get('X-Shopify-Hmac-Sha256');
@@ -67,7 +68,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
         const body = await getRawBody(req)
 
         const hash = crypto
-            .createHmac('sha256', webhooks_secret_key)
+            .createHmac('sha256', app_secret)
             .update(body, 'utf8', 'hex')
             .digest('base64')
 
