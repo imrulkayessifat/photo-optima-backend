@@ -26,7 +26,7 @@ const verifyRequest = async (req: Request) => {
 
 export const productCreate = async (req: any, res: any) => {
     try {
-        console.log("webhook check ","product create")
+        console.log("webhook check ", "product create")
         const body = await verifyRequest(req);
         const { id, title } = body;
         const productId = id.toString();
@@ -62,23 +62,25 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
         const hmac = req.get('X-Shopify-Hmac-Sha256')
         const shopDomain = req.get('x-shopify-shop-domain')
 
-        console.log("webhook shop domain ",shopDomain)
-    
+        console.log("webhook shop domain ", shopDomain)
+
         const body = await getRawBody(req)
-    
+
         const hash = crypto
             .createHmac('sha256', webhooks_secret_key)
             .update(body, 'utf8', 'hex')
             .digest('base64')
-    
+
+        console.log("hmac === hash", hmac === hash)
+
         if (hmac === hash) {
             try {
                 req.body = JSON.parse(body.toString());
                 const productData = req.body;
                 const { id, title, images, alt } = productData;
-    
+
                 const productId = id.toString();
-    
+
                 const productInput = {
                     id_storename: {
                         id: productId,
@@ -98,19 +100,19 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         product_sku: productData.variants[0].sku,
                     }
                 })
-    
+
                 for (const image of images) {
                     const { id: imageId, src: url, width, height, alt } = image;
                     const imageIdStr = imageId.toString();
 
-                    console.log("image log",image)
-    
+                    console.log("image log", image)
+
                     const newUrl = new URL(url);
                     const name = newUrl.pathname.split('/').pop() || null;
-    
+
                     let responses = []
-    
-    
+
+
                     if (alt !== null && alt.split('.')[0].split('-').pop().slice(-1) === 'C') {
                         const response = await db.image.update({
                             where: {
@@ -148,12 +150,12 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                     } else {
 
                         const imageExit = await db.image.findFirst({
-                            where:{
-                                id:imageIdStr
+                            where: {
+                                id: imageIdStr
                             }
                         })
 
-                        if(!imageExit){
+                        if (!imageExit) {
                             const response = await db.image.create({
                                 data: {
                                     id: imageIdStr,
@@ -164,24 +166,24 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                                     altRename: false,
                                     productId,
                                     status: 'NOT_COMPRESSED',
-                                    storename:shopDomain
+                                    storename: shopDomain
                                 },
                             });
                             responses.push(response);
                         }
-                        
+
                     }
-    
+
                     io.emit('image_model', () => {
                         console.log('an event occured in shopify product image upload');
                     });
-    
+
                     const storeRes = await db.store.findFirst({
                         where: {
                             name: shopDomain
                         }
                     })
-    
+
                     if (storeRes.autoCompression) {
                         const imageRes = await db.image.findFirst({
                             where: {
@@ -209,7 +211,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                                 id: imageIdStr
                             }
                         })
-    
+
                         if (imageRes.id) {
                             const req = fetch(`${process.env.MQSERVER}/rename/file-rename`, {
                                 method: 'PUT',
@@ -223,14 +225,14 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                             })
                         }
                     }
-    
+
                     if (storeRes.autoAltRename) {
                         const imageRes = await db.image.findFirst({
                             where: {
                                 id: imageIdStr
                             }
                         })
-    
+
                         if (imageRes.id) {
                             const req = fetch(`${process.env.MQSERVER}/rename/alt-rename`, {
                                 method: 'PUT',
@@ -245,10 +247,10 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                         }
                     }
                 }
-    
-    
+
+
                 res.status(200).json({ data: [] });
-    
+
             } catch (e) {
                 console.error(e);
                 res.status(500).json({ error: 'An error occurred while updating product data.' });
@@ -256,7 +258,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
         } else {
             res.status(403).json({ error: "you don't have access" })
         }
-    } catch(e){
+    } catch (e) {
         res.status(400).json({ error: 'something went wrong!' })
     }
 }
