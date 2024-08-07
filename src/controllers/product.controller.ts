@@ -60,6 +60,8 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
 
         const hmac = req.get('X-Shopify-Hmac-Sha256')
         const shopDomain = req.get('x-shopify-shop-domain')
+
+        console.log("webhook shop domain ",shopDomain)
     
         const body = await getRawBody(req)
     
