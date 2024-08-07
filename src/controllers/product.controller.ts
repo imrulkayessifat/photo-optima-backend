@@ -27,7 +27,7 @@ const verifyRequest = async (req: Request) => {
 export const productCreate = async (req: any, res: any) => {
     try {
         console.log("webhook check ", "product create")
-        const body = await verifyRequest(req);
+        const body =  await getRawBody(req);;
         const { id, title } = body;
         const productId = id.toString();
         const shopDomain = req.get('x-shopify-shop-domain');
