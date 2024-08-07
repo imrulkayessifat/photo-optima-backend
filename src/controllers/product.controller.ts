@@ -26,6 +26,7 @@ const verifyRequest = async (req: Request) => {
 
 export const productCreate = async (req: any, res: any) => {
     try {
+        console.log("webhook check ","product create")
         const body = await verifyRequest(req);
         const { id, title } = body;
         const productId = id.toString();
