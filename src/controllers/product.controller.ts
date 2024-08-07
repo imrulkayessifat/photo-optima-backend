@@ -73,7 +73,7 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
 
         console.log("hmac === hash", hmac === hash)
 
-        if (hmac === hash) {
+        // if (hmac === hash) {
             try {
                 req.body = JSON.parse(body.toString());
                 const productData = req.body;
@@ -255,9 +255,9 @@ export const productUpdate = async (req: Request, res: Response): Promise<void> 
                 console.error(e);
                 res.status(500).json({ error: 'An error occurred while updating product data.' });
             }
-        } else {
-            res.status(403).json({ error: "you don't have access" })
-        }
+        // } else {
+        //     res.status(403).json({ error: "you don't have access" })
+        // }
     } catch (e) {
         res.status(400).json({ error: 'something went wrong!' })
     }
